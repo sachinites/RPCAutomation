@@ -1,0 +1,18 @@
+<RPC_Structures name="RPC_Structures">
+
+<C_Structure name="company_t" description="company_t C structure">
+	<member name="comp_name" dataType="CHARARRAY" cDataArraySize="32" description="name of a company"/>
+	<member name="emp_strength" dataType="INTEGER" description="Employee count"/> 	
+</C_Structure>
+
+<C_Structure name="person_t" description="person_t C structure">
+	<member name="name" dataType="CHARARRAY" cDataArraySize="32" description="name of a person"/>
+	<member name="age" dataType="INTEGER" description="Age of a person"/>
+	<member name="Occupation" dataType="CHARARRAY" cDataArraySize="32" description="Occupation of a person"/>
+	<member name="Manager" dataType="OBJECT_PTR" referredObject="person_t" description="Manager Details"/>
+	<member name="company" dataType="OBJECT" referredObject="company_t" description="Company Details"/>
+	<member name="last_employers" dataType="OBJECT_PTR" referredObject="company_t" vector="true" description="last_employment details"/>	
+</C_Structure>
+
+
+</RPC_Structures>
