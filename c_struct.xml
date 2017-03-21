@@ -2,18 +2,40 @@
 
 <C_Structure name="company_t" description="company_t C structure">
 	<member name="comp_name" dataType="CHARARRAY" cDataArraySize="32" description="name of a company"/>
-	<member name="emp_strength" dataType="INTEGER" description="Employee count"/> 	
+	<member name="emp_strength" dataType="INT32" description="Employee count"/>
+	<member name="CEO" dataType="OBJECT" isPTR="true" referredObject="person_t" description="CEO"/>
 </C_Structure>
 
 <C_Structure name="person_t" description="person_t C structure">
 	<member name="name" dataType="CHARARRAY" cDataArraySize="32" description="name of a person"/>
-	<member name="age" dataType="INTEGER" isPTR="false" description="Age of a person"/>
+	<member name="age" dataType="INT32" isPTR="false" description="Age of a person"/>
+	<member name="height" dataType="INT32" isPTR="true" cDataArraySize="32" description="Age of a person"/>
 	<member name="occupation" dataType="CHARARRAY" cDataArraySize="32" description="Occupation of a person"/>
 	<member name="manager" dataType="OBJECT" isPTR="true" referredObject="person_t" description="Manager Details"/>
+	<member name="peon" dataType="OBJECT" isPTR="true" referredObject="person_t" cDataArraySize="32" description="Manager Details"/>
 	<member name="company" dataType="OBJECT" referredObject="company_t" description="Company Details"/>
 	<member name="last_employers" dataType="OBJECT" isPTR="true" referredObject="company_t" vector="true" description="last_employment details"/>
-	<member name = "colleagues" dataType="OBJECT" isPTR="true" referredObject="person_t" vector="true"/>
+	<member name ="colleagues" dataType="OBJECT" isPTR="true" referredObject="person_t" vector="true"/>
+</C_Structure>
+<!--
+<C_Structure name="igmp_snooping_vlan_group" description="Group information on an interface">
+        <Member name="grp_ip_addr" dataType="IPV4ADDRESS" description="Igmp group address"/>
+        <Member name="member_ports" dataType="CHAR" isPTR="true" vector="true" description="group membership ports"/>
 </C_Structure>
 
 
+<C_Structure name="igmp_snooping_vlan" description="Igmp snooping enabled vlan">
+        <Member name="vlan_id" dataType="UI32" description="vlan id"/>
+        <Member name="multicast_router_ports" dataType="CHAR" isPTR="true" vector="true" description="Multicast Router ports"/>
+        <Member name="is_querier" dataType="UI32" description="Is interface Querier enabled"/>
+        <Member name="igmp_operation_mode" dataType="UI32" description="IGMP Operation mode"/>
+        <Member name="fast_leave" dataType="UI32" description="Is Fast Leave enabled"/>
+        <Member name="qmrt" dataType="UI32" description="Igmp query response time"/>
+        <Member name="lmqi" dataType="UI32" description="Last Member Query Interval"/>
+        <Member name="qi" dataType="UI32" description="Query Interval"/>
+        <Member name="version" dataType="UI32" description="Igmp Version"/>
+        <Member name="num_of_mcast_grps" dataType="UI32" description="Number of Multicast Groups"/>
+        <Member name="vlan_groups" dataType="OBJECT" vector="true" isPTR="true" referredObject="igmp_snooping_vlan_group" description="Igmp groups on a vlan"/>
+</C_Structure>
+-->
 </RPC_Structures>
