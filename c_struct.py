@@ -275,8 +275,8 @@ def serialize_structure(c_struct_obj, dir_path):
 	#generate C file now
 	
 	#target_c.write("#include \"serialize.h\"\n")
-	target_c.write("#include \"stdlib.h\"\n")
-	target_c.write("#include \"memory.h\"\n")
+	target_c.write("#include <stdlib.h>\n")
+	target_c.write("#include <memory.h>\n")
 	target_c.write("#include \"" + c_struct_obj.struct_name + ".h\"\n")
 	target_c.write("#include \"" + c_struct_obj.struct_name + "_xdr_serialize.h\"\n")
 
@@ -297,6 +297,14 @@ def serialize_structure(c_struct_obj, dir_path):
 	target_c.write("\n\n")
 	target_c.write("void \n" + c_struct_obj.struct_name + "_xdr_serialize(" + c_struct_obj.struct_name + " *obj, ser_buff_t *b){\n")
 	tab = "	"
+	target_c.write(tab)
+	target_c.write("if(!obj){\n")
+	target_c.write(tab + tab)
+	target_c.write("serialize_int32(b, NON_EXISTING_STRUCT);\n")
+	target_c.write(tab + tab)
+	target_c.write("return;\n")
+	target_c.write(tab)
+	target_c.write("}\n")
 	
 	for fields in c_struct_obj.field_list:
 		fld_format = [None, None, None, None, None, None]
@@ -382,7 +390,13 @@ def deserialize_structure(c_struct_obj, dir_path):
 	target_c.write("\n\n")
 	target_c.write(c_struct_obj.struct_name +" *\n" + c_struct_obj.struct_name + "_xdr_deserialize(ser_buff_t *b){\n")
 	tab = "	"
-
+	target_c.write("\n")
+	target_c.write(tab + "int check_existence;\n")
+	target_c.write(tab + "de_serialize_string((char *)&check_existence, b, sizeof(int));\n")
+	target_c.write(tab + "if(check_existence == NON_EXISTING_STRUCT){\n")
+	target_c.write(tab + tab + "return NULL;\n")
+	target_c.write(tab + "}\n")
+	target_c.write(tab + "serialize_buffer_skip(b, -1*sizeof(int));\n")
 	
 	target_c.write("\n" + tab)
 	target_c.write(c_struct_obj.struct_name + " *obj = calloc(1, sizeof(" + c_struct_obj.struct_name + "));\n")
@@ -450,7 +464,6 @@ def deserialize_structure(c_struct_obj, dir_path):
 			target_c.write("free(constructed_obj);\n")
 			target_c.write(tab)
 			target_c.write("}\n")
-
 		elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] == None and fld_format[3] == "false":
 			# person_t p
 			target_c.write("obj->" + fld_format[2] + " = *" + fld_format[4] + "_xdr_deserialize(b);\n")

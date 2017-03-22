@@ -3,6 +3,7 @@
 
 /* Data types supported*/
 
+#define NON_EXISTING_STRUCT     (-4025479151)
 
 typedef struct serialized_buffer{
     #define SERIALIZE_BUFFER_DEFAULT_SIZE 512

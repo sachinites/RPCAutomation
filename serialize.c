@@ -251,6 +251,7 @@ void serialize_double(ser_buff_t *b, double data){
 
 void serialize_string(ser_buff_t *b, char *data, int nbytes){
     if (b == NULL) assert(0);
+    if(!data) return;
     ser_buff_t *buff = (ser_buff_t *)(b);
     int available_size = buff->size - buff->next;
     char isResize = 0;
@@ -302,7 +303,7 @@ void print_buffer_details(ser_buff_t *b, const char *fn, int lineno){
 void 
 de_serialize_string(char *dest, ser_buff_t *b, int size){
 	if(!b || !b->b) assert(0);
-	if(!size) assert(0);;
+	if(!dest || !size) assert(0);;
 	if((b->size - b->next)< size) assert(0);	 
 	memcpy(dest, b->b + b->next, size);
 	b->next += size;
