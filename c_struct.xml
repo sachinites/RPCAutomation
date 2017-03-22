@@ -7,15 +7,21 @@
 </C_Structure>
 
 <C_Structure name="person_t" description="person_t C structure">
-	<member name="name" dataType="CHARARRAY" cDataArraySize="32" description="name of a person"/>
+	<member name="vehicle_nos" dataType="UINT32" cDataArraySize="4" description="Vehicle numbers of a person"/>
 	<member name="age" dataType="INT32" isPTR="false" description="Age of a person"/>
-	<member name="height" dataType="INT32" isPTR="true" cDataArraySize="32" description="Age of a person"/>
-	<member name="occupation" dataType="CHARARRAY" cDataArraySize="32" description="Occupation of a person"/>
-	<member name="manager" dataType="OBJECT" isPTR="true" referredObject="person_t" description="Manager Details"/>
-	<member name="peon" dataType="OBJECT" isPTR="true" referredObject="person_t" cDataArraySize="32" description="Manager Details"/>
-	<member name="company" dataType="OBJECT" referredObject="company_t" description="Company Details"/>
-	<member name="last_employers" dataType="OBJECT" isPTR="true" referredObject="company_t" vector="true" description="last_employment details"/>
-	<member name ="colleagues" dataType="OBJECT" isPTR="true" referredObject="person_t" vector="true"/>
+	<member name="height" dataType="INT32" isPTR="true" description="height of a person"/>
+	<member name="acc_nos" dataType="UINT32" isPTR="true" vector ="true" description="accnt nos of a of a person"/>
+	<member name="last_salary_amounts" dataType="UINT32" isPTR="true" cDataArraySize="12" description="12 months salary amounts of a person"/>
+
+	<member name="name" dataType="CHARARRAY" cDataArraySize="32" description="name of a person"/>
+	<member name="company" dataType="OBJECT" referredObject="company_t" description="current employer of a person"/>
+	<member name="prev_employers" dataType="OBJECT" referredObject="company_t" isPTR="true" vector="true" description="prevous employers of a person"/>
+	<member name="dream_companies" dataType="OBJECT" referredObject="company_t" cDataArraySize="3" description="dream employers of a person"/>
+	
+	<member name ="friends" dataType="OBJECT" isPTR="true" referredObject="person_t" vector="true" description="colleagues of a person"/>
+	<member name="CEO" dataType="OBJECT" isPTR="true" referredObject="person_t" description="Manager Details"/>
+	<member name="administrative_staff" dataType="OBJECT" isPTR="true" referredObject="person_t" cDataArraySize="12"/>
+
 </C_Structure>
 <!--
 <C_Structure name="igmp_snooping_vlan_group" description="Group information on an interface">
@@ -25,16 +31,16 @@
 
 
 <C_Structure name="igmp_snooping_vlan" description="Igmp snooping enabled vlan">
-        <Member name="vlan_id" dataType="UI32" description="vlan id"/>
+        <Member name="vlan_id" dataType="UINT32" description="vlan id"/>
         <Member name="multicast_router_ports" dataType="CHAR" isPTR="true" vector="true" description="Multicast Router ports"/>
-        <Member name="is_querier" dataType="UI32" description="Is interface Querier enabled"/>
-        <Member name="igmp_operation_mode" dataType="UI32" description="IGMP Operation mode"/>
-        <Member name="fast_leave" dataType="UI32" description="Is Fast Leave enabled"/>
-        <Member name="qmrt" dataType="UI32" description="Igmp query response time"/>
-        <Member name="lmqi" dataType="UI32" description="Last Member Query Interval"/>
-        <Member name="qi" dataType="UI32" description="Query Interval"/>
-        <Member name="version" dataType="UI32" description="Igmp Version"/>
-        <Member name="num_of_mcast_grps" dataType="UI32" description="Number of Multicast Groups"/>
+        <Member name="is_querier" dataType="UINT32" description="Is interface Querier enabled"/>
+        <Member name="igmp_operation_mode" dataType="UINT32" description="IGMP Operation mode"/>
+        <Member name="fast_leave" dataType="UINT32" description="Is Fast Leave enabled"/>
+        <Member name="qmrt" dataType="UINT32" description="Igmp query response time"/>
+        <Member name="lmqi" dataType="UINT32" description="Last Member Query Interval"/>
+        <Member name="qi" dataType="UINT32" description="Query Interval"/>
+        <Member name="version" dataType="UINT32" description="Igmp Version"/>
+        <Member name="num_of_mcast_grps" dataType="UINT32" description="Number of Multicast Groups"/>
         <Member name="vlan_groups" dataType="OBJECT" vector="true" isPTR="true" referredObject="igmp_snooping_vlan_group" description="Igmp groups on a vlan"/>
 </C_Structure>
 -->

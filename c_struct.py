@@ -18,7 +18,6 @@ class field:
 
 	def __del__(self):
 		class_name = self.__class__.__name__
-		print class_name, "destroyed"
 
 def __get_size_of(data_type):
 	if data_type == "INT32":
@@ -38,6 +37,22 @@ def __get_size_of(data_type):
 	else:
 		return "Invalid"
 
+def __get_c_datatype(data_type):
+	if data_type == "INT32":
+		return "int"
+	if data_type == "UINT32":
+		return "unsigned int"
+	if data_type == "FLOAT":
+		return "float"
+	if data_type == "DOUBLE":
+		return "double"
+	if data_type == "LONG":
+		return "long"
+	if data_type == "CHAR" or data_type == "CHARARRAY":
+		return "char"
+	else:
+		return "Invalid"
+	
 class c_structures:
 	def __init__(self):
 		self.struct_name = ""
@@ -48,7 +63,6 @@ class c_structures:
 
 	def __del__(self):
 		class_name = self.__class__.__name__
-		print class_name, "destroyed"
 
 	def dump_struct(self):
 		print "structure name = %s" %self.struct_name
@@ -152,50 +166,53 @@ def build_structure_list_from_xml(xml_file_name):
 		c_struct_obj.field_list = fld_list		
 		__get_structure_external_references_list (c_struct_obj)
 
-		print "for structure : " + c_struct_obj.struct_name + " ext ref complete cont = " + str(len(c_struct_obj.ext_references_complete)) + "\n"
-		print "for structure : " + c_struct_obj.struct_name + " ext ref incomplete cont = " + str(len(c_struct_obj.ext_references_incomplete)) + "\n"
-
 		c_struct_obj_list.append(c_struct_obj)
 
 	return c_struct_obj_list
 
 
 def write_field_format(target_file, fld_format, parent_struct_name):
-	_str = "	"
-	
-	if fld_format[3] == "true":
-		_str += "unsigned int " + fld_format[2] + "_count;\n	"
-	
-	
-	if fld_format[0] == "INT32":
-		_str += "int "
-	elif fld_format[0] == "CHARARRAY":
-		_str += "char "
-	elif fld_format[0] == "UINT32":
-		_str += "unsigned int"
-	elif fld_format[0] == "CHARARRAY":
-		_str += "char "
-	elif fld_format[0] == "CHARARRAY":
-		_str += "char "
-	elif fld_format[0] == "OBJECT":
-		if fld_format[4] != parent_struct_name:
-			_str += fld_format[4] + " "
-		else:
-			_str += "struct _" + fld_format[4] + "_ "
+
+	tab="	"
+	if parent_struct_name == fld_format[4]:
+		obj_dtype = "struct _" + parent_struct_name + "_"
 	else:
-		_str += "Error "
+		obj_dtype = fld_format[4]
 
-	if fld_format[1] == "true":
-		_str += " * "
-
-	_str += fld_format[2]
-
-	if fld_format[5] != None:
-		_str += "["+ fld_format[5] +"];\n"
+	if fld_format[0] != "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
+		# int p[25]  serialize_string(b, obj->p, sizeof(int) * arr_size)
+		target_file.write(tab + __get_c_datatype(fld_format[0]) + " " + fld_format[2] + "[" + fld_format[5] + "];\n")
+	elif fld_format[0] != "OBJECT" and fld_format[1] == "false" and fld_format[5] == None and fld_format[3] == "false":
+		# int p	     serialize_string(b, &obj->p,sizeof(int))	
+		target_file.write(tab + __get_c_datatype(fld_format[0]) + " " + fld_format[2] + ";\n")
+	elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
+		#int *p	     serialize_string(b, obj->p, sizeof(int))
+		target_file.write(tab + __get_c_datatype(fld_format[0]) + " * " + fld_format[2] + ";\n")
+	elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
+		#p_count = 0; int *p
+		target_file.write(tab + "unsigned int " + fld_format[2] + "_count;\n")
+		target_file.write(tab + __get_c_datatype(fld_format[0]) + " * " + fld_format[2] + ";\n")
+	elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] != None and fld_format[3] == "false":
+		# int *p[25]
+		target_file.write(tab + __get_c_datatype(fld_format[0]) + " * " + fld_format[2] + "[" + fld_format[5] + "];\n")
+	elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
+		# person_t p[25] 
+		target_file.write(tab + obj_dtype + " " + fld_format[2] + "[" + fld_format[5] + "];\n")
+	elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
+		# person_t *p with vector
+		target_file.write(tab + "unsigned int " + fld_format[2] + "_count;\n")
+		target_file.write(tab + obj_dtype + " * " + fld_format[2] + ";\n")
+	elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] == None and fld_format[3] == "false":
+		# person_t p
+		target_file.write(tab + obj_dtype + " " + fld_format[2] + ";\n")
+	elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
+		# person_t *p
+		target_file.write(tab + obj_dtype + " * " + fld_format[2] + ";\n")
+	elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] != None and fld_format[3] == "false":
+		# person_t *p[25]
+		target_file.write(tab + obj_dtype + " * " + fld_format[2] + "[" + fld_format[5] + "];\n")
 	else:
-		_str += ";\n"
-
-	target_file.write(_str)		
+		print fld_format[2] + " mis hit3 "
 
 def convert_xml_to_c_structures(xml_file_name, dir_path_name, c_struct_obj_list):
 	for c_struct_obj in c_struct_obj_list:
@@ -224,6 +241,7 @@ def convert_xml_to_c_structures(xml_file_name, dir_path_name, c_struct_obj_list)
 			write_field_format(target, fld_format, c_struct_obj.struct_name)
 		target.write("} " + c_struct_obj.struct_name + ";\n")
 		target.write("\n\n#endif")
+		target.close()
 
 def print_field(fields):
 	print "field.datatype = " + fields.datatype
@@ -252,18 +270,20 @@ def serialize_structure(c_struct_obj, dir_path):
 	target_h.write("typedef struct _" + c_struct_obj.struct_name + "_ " + c_struct_obj.struct_name + ";\n")
 	target_h.write("#include \"serialize.h\"\n")
 	target_h.write("\n\n")
-	target_h.write("void " + c_struct_obj.struct_name + "_xdr_serialize(" + c_struct_obj.struct_name + " *obj, ser_buff_t *b);")
-	target_h.write("\n\n#endif")
+	target_h.write("void \n" + c_struct_obj.struct_name + "_xdr_serialize(" + c_struct_obj.struct_name + " *obj, ser_buff_t *b);")
 
 	#generate C file now
 	
 	#target_c.write("#include \"serialize.h\"\n")
+	target_c.write("#include \"stdlib.h\"\n")
+	target_c.write("#include \"memory.h\"\n")
 	target_c.write("#include \"" + c_struct_obj.struct_name + ".h\"\n")
 	target_c.write("#include \"" + c_struct_obj.struct_name + "_xdr_serialize.h\"\n")
 
 	for ext_ref in c_struct_obj.ext_references_complete:
-        	target_c.write("#include \"" + ext_ref + ".h\"\n")
+        	#target_c.write("#include \"" + ext_ref + ".h\"\n")
 		target_c.write("#include \"" + ext_ref + "_xdr_serialize.h\"\n")
+
 	for ext_ref in c_struct_obj.ext_references_incomplete:
         	#target_c.write("#include \"" + ext_ref + ".h\"\n")
 		target_c.write("#include \"" + ext_ref + "_xdr_serialize.h\"\n")
@@ -275,7 +295,7 @@ def serialize_structure(c_struct_obj, dir_path):
 			break
 
 	target_c.write("\n\n")
-	target_c.write("void " + c_struct_obj.struct_name + "_xdr_serialize(" + c_struct_obj.struct_name + " *obj, ser_buff_t *b){\n")
+	target_c.write("void \n" + c_struct_obj.struct_name + "_xdr_serialize(" + c_struct_obj.struct_name + " *obj, ser_buff_t *b){\n")
 	tab = "	"
 	
 	for fields in c_struct_obj.field_list:
@@ -290,22 +310,22 @@ def serialize_structure(c_struct_obj, dir_path):
 		#print_field(fields)
 		target_c.write(tab)
 		
-		if fld_format[0] == "IPV4ADDRESS":
-			target_c.write("serialize_string(b, (char *)obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + ");\n")
-		elif fld_format[0] != "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
+		if fld_format[0] != "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
 			# int p[25]  serialize_string(b, obj->p, sizeof(int) * arr_size)
 			target_c.write("serialize_string(b, (char *)obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + "*" + fld_format[5] + ");\n")		
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "false" and fld_format[5] == None and fld_format[3] == "false":
 			# int p	     serialize_string(b, &obj->p,sizeof(int))	
 			target_c.write("serialize_string(b, (char *)&obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + ");\n")
-		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "dalse":
+		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
 			#int *p	     serialize_string(b, obj->p, sizeof(int))
 			target_c.write("serialize_string(b, (char *)obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
 			#p_count = 0; int *p
-			target_c.write("unsigned int " + fld_format[2] + "_count = 0;\n")
+			target_c.write("serialize_string(b, (char *)&obj->" + fld_format[2] + "_count, sizeof(unsigned int));\n")
 			target_c.write(tab)
-			target_c.write("serialize_string(b, (char *)obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + ");\n")
+			target_c.write("for (loop_var = 0; loop_var < " + "obj->" + fld_format[2] + "_count ; loop_var ++)\n")
+			target_c.write(tab + tab)
+			target_c.write("serialize_string(b, (char *)(obj->" + fld_format[2] + " + loop_var), " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] != None and fld_format[3] == "false":
 			# int *p[25]	
 			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++){\n")
@@ -322,6 +342,8 @@ def serialize_structure(c_struct_obj, dir_path):
 			target_c.write("}\n")
 		elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
 			# person_t *p with vector
+			target_c.write("serialize_string(b, (char *)&obj->" + fld_format[2] + "_count, sizeof(unsigned int));\n")
+			target_c.write(tab)
 			target_c.write("for (loop_var = 0; loop_var < " + "obj->" + fld_format[2] + "_count ; loop_var ++){\n")
 			target_c.write(tab + tab)
 			target_c.write(fld_format[4] + "_xdr_serialize(obj->" + fld_format[2] + " + loop_var, b);\n")
@@ -341,8 +363,136 @@ def serialize_structure(c_struct_obj, dir_path):
 			target_c.write(tab)
 			target_c.write("}\n")
 		else:
-			print fld_format[2] + " mis hit"
+			print fld_format[2] + " mis hit2 "
 	target_c.write("}")
+	target_h.close()
+	target_c.close()
+
+def deserialize_structure(c_struct_obj, dir_path):
+	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
+
+	# writing header file
+	target_h.write("\n\n")
+	target_h.write(c_struct_obj.struct_name +" *\n" + c_struct_obj.struct_name + "_xdr_deserialize(ser_buff_t *b);\n")
+	target_h.write("\n\n#endif")
+	target_h.close()
+
+	# writing C file
+	target_c = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.c", 'a')
+	target_c.write("\n\n")
+	target_c.write(c_struct_obj.struct_name +" *\n" + c_struct_obj.struct_name + "_xdr_deserialize(ser_buff_t *b){\n")
+	tab = "	"
+
+	
+	target_c.write("\n" + tab)
+	target_c.write(c_struct_obj.struct_name + " *obj = calloc(1, sizeof(" + c_struct_obj.struct_name + "));\n")
+
+	for fields in c_struct_obj.field_list:
+		fld_format = [None, None, None, None, None, None]
+		fld_format[0] = fields.datatype
+		fld_format[1] = fields.isptr 
+		fld_format[2] = fields.field_name
+		fld_format[3] = fields.vector
+		fld_format[4] = fields.referredObject
+		fld_format[5] = fields.cDataArraySize
+
+		#print_field(fields)
+		target_c.write(tab)
+		
+		if fld_format[0] != "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
+			# int p[25]  de_serialize_string(obj->p, b, sizeof(int) * arr_size)
+			target_c.write("de_serialize_string((char *)obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + "*" + fld_format[5] + ");\n")		
+		elif fld_format[0] != "OBJECT" and fld_format[1] == "false" and fld_format[5] == None and fld_format[3] == "false":
+			# int p	     de_serialize_string((char *)&obj->p, b, sizeof(int))	
+			target_c.write("de_serialize_string((char *)&obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + ");\n")
+		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
+			#int *p	     serialize_string((char *)obj->p, b , sizeof(int))
+			target_c.write("de_serialize_string((char *)obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + ");\n")
+		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
+			#p_count = 0; int *p
+			target_c.write("de_serialize_string((char *)&obj->" + fld_format[2] + "_count, b, sizeof(unsigned int));\n")
+			target_c.write(tab)
+			target_c.write("obj->" + fld_format[2] + " = calloc(" + __get_size_of(fld_format[0]) + ", obj->" + fld_format[2] + "_count);\n")
+			target_c.write(tab)
+			target_c.write("for (loop_var = 0; loop_var < obj->" + fld_format[2] + "_count; " + " loop_var++){\n")
+			target_c.write(tab + tab)
+			target_c.write("de_serialize_string((char *)(obj->" + fld_format[2] + " + loop_var), b, " + __get_size_of(fld_format[0]) + ");\n")
+			target_c.write(tab)
+			target_c.write("}\n")
+		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] != None and fld_format[3] == "false":
+			# int *p[25]	
+			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++)\n")
+			target_c.write(tab + tab)
+			target_c.write("obj->" + fld_format[2] + "[loop_var] = calloc ( 1, " + __get_size_of(fld_format[0]) + ");\n") 
+			target_c.write(tab)
+			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++)\n")
+			target_c.write(tab + tab)
+			target_c.write("de_serialize_string((char *)(obj->" + fld_format[2] + "[loop_var]), b, " + __get_size_of(fld_format[0]) + ");\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
+			# person_t p[25] 
+			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++){\n")
+			target_c.write(tab + tab) 
+			target_c.write("obj->" + fld_format[2] + "[loop_var] = *" + fld_format[4] + "_xdr_deserialize(b);\n") 	
+			target_c.write(tab)
+			target_c.write("}\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
+			# person_t *p with vector
+			target_c.write("de_serialize_string((char *)&obj->" + fld_format[2] + "_count, b, sizeof(unsigned int));\n")
+			target_c.write(tab)
+			target_c.write("obj->"+ fld_format[2] + " = calloc (obj->" + fld_format[2] + "_count, sizeof(" + fld_format[4] + "));\n")
+			target_c.write(tab)
+			target_c.write("for (loop_var = 0; loop_var < " + "obj->" + fld_format[2] + "_count ; loop_var ++){\n")
+			target_c.write(tab + tab)
+			target_c.write(fld_format[4] + " *constructed_obj = " + fld_format[4] + "_xdr_deserialize(b);\n")
+			target_c.write(tab + tab)
+			target_c.write("memcpy(obj->" + fld_format[2] + " + loop_var, constructed_obj, sizeof(" + fld_format[4]  + "));\n")
+			target_c.write(tab + tab)
+			target_c.write("free(constructed_obj);\n")
+			target_c.write(tab)
+			target_c.write("}\n")
+
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] == None and fld_format[3] == "false":
+			# person_t p
+			target_c.write("obj->" + fld_format[2] + " = *" + fld_format[4] + "_xdr_deserialize(b);\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
+			# person_t *p
+			target_c.write("obj->" + fld_format[2] + " = " + fld_format[4] + "_xdr_deserialize(b);\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] != None and fld_format[3] == "false":
+			# person_t *p[25]
+			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++){\n")
+			target_c.write(tab + tab)
+			target_c.write("obj->" + fld_format[2] + "[loop_var] = " + fld_format[4] + "_xdr_deserialize(b);\n")
+			target_c.write(tab)
+			target_c.write("}\n")
+		else:
+			print fld_format[2] + " mis hit1"
+	target_c.write(tab)
+	target_c.write("return obj;\n")
+	target_c.write("}")
+	target_c.close()
+	return
+
+def generate_copy_fn(c_struct_obj, dir_path):
+	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
+	target_c = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.c", 'a')
+	target_h.close()
+	target_c.close()
+	return
+
+def generate_is_similar_fn(c_struct_obj, dir_path):
+	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
+	target_c = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.c", 'a')
+	target_h.close()
+	target_c.close()
+	return
+
+def generate_free_fn(c_struct_obj, dir_path):
+	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
+	target_c = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.c", 'a')
+	target_h.close()
+	target_c.close()
+	return
+
 
 if __name__ == "__main__":
 	xml_file_name = "c_struct.xml" 
@@ -350,3 +500,4 @@ if __name__ == "__main__":
 	convert_xml_to_c_structures(xml_file_name, ".", c_struct_obj_list)
 	for c_struct_obj in c_struct_obj_list:
 		serialize_structure(c_struct_obj, ".")
+		deserialize_structure(c_struct_obj, ".")
