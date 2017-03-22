@@ -392,6 +392,7 @@ def deserialize_structure(c_struct_obj, dir_path):
 	tab = "	"
 	target_c.write("\n")
 	target_c.write(tab + "int check_existence;\n")
+	target_c.write(tab + "if(is_serialized_buffer_empty(b)) return NULL;\n")
 	target_c.write(tab + "de_serialize_string((char *)&check_existence, b, sizeof(int));\n")
 	target_c.write(tab + "if(check_existence == NON_EXISTING_STRUCT){\n")
 	target_c.write(tab + tab + "return NULL;\n")

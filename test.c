@@ -1,19 +1,16 @@
 #include "company_t.h"
 #include "person_t.h"
-#include "person_t_xdr_serialize.h"
-#include "company_t_xdr_serialize.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
+#include "rpc_fn.h"
+#include "rpc_uapi.h"
 
-void gdb(ser_buff_t *b){}
+//void gdb(ser_buff_t *b){}
 
 int
 main(int argc, char **argv){
 	person_t person;
-	ser_buff_t *b = 0;
-
-	init_serialized_buffer(&b);
 	memset(&person, 0, sizeof(person_t));
 
 	person.vehicle_nos[0] = 100;
@@ -42,10 +39,11 @@ main(int argc, char **argv){
 	strcpy(ceo->name,"Llyod\0");
 
 	person.CEO = ceo;
-	
-	person_t_xdr_serialize(&person, b);
-	
 
-	gdb(b);
+	set_rpc_client_param(5000); // setting recieving buffer size to 5k bytes	
+	//person_t *res = rpc_remote_call(&person, person, 1);
+
+
+//	gdb(b);
 	return 0;
 }

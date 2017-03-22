@@ -34,6 +34,10 @@ void free_serialize_buffer(ser_buff_t *b){
 	free(b);
 }
 
+int get_serialize_buffer_length(ser_buff_t *b){
+	return b->size;
+}
+
 int get_serialize_buffer_current_ptr_offset(ser_buff_t *b){
 	if(!b) return -1;
 	return  b->next;
@@ -312,11 +316,12 @@ de_serialize_string(char *dest, ser_buff_t *b, int size){
 
 
 void copy_in_serialized_buffer_by_offset(ser_buff_t *b, int size, char *value, int offset){
+	#if 0
 	if((b->size - b->next) < size){
 		printf("%s(): Error : Insufficient buffer space\n", __FUNCTION__);
 		return;
 	}
-	
+	#endif
 	if(offset > b->size){
 		printf("%s(): Error : Attemt to write outside buffer boundaries\n", __FUNCTION__);
 		return;
