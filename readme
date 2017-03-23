@@ -1,0 +1,14 @@
+1. Describe the structure layout in c_struct.xml
+2. execute c_struct.py
+3. in file rpc_spec.h, add the procedure id to the enum, and #include your structure(s) header files generated in step 2
+	3.1 procedure id enum should be of format : [procedure_name]_id
+4. Add the RPC signatire also in rpc_spec.h.
+5. In rpc_client_implementation.c, write the implementation of a RPC fn for client side.
+	5.1 $include structure.h and structure_xdr_serialize.h files also in rpc_client_implementation.c file
+6. In file rpc_server_stubs.h, make an entry of stub of your RPC fn. The stub has the fixed format : 
+		ser_buff_t * <stub name> (ser_buff_t *)
+7. in file rpc_server_stubs.c, #include structure.h and structure_xdr_serialize.h files 
+	7.1 in the same file, write the implementation of stub fn
+8. In rpc_server_init.c, add an entry of callback stub fn in rpc_callback_array  
+9. In file rpc_server_implementation.c, write the implementation of your actual RPC call. NO need to #include any structure/xdr header files. You can include external/standard header files
+10. Add #includes <structure.h> files in test.c and call the RPC

@@ -326,7 +326,10 @@ def serialize_structure(c_struct_obj, dir_path):
 			target_c.write("serialize_string(b, (char *)&obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
 			#int *p	     serialize_string(b, obj->p, sizeof(int))
-			target_c.write("serialize_string(b, (char *)obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + ");\n")
+			target_c.write("if(obj->" + fld_format[2] + ")\n")
+			target_c.write(tab + tab + "serialize_string(b, (char *)obj->" + fld_format[2] + ", " + __get_size_of(fld_format[0]) + ");\n")
+			target_c.write(tab + "else\n")
+			target_c.write(tab + tab + "serialize_int32(b, NON_EXISTING_STRUCT);\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
 			#p_count = 0; int *p
 			target_c.write("serialize_string(b, (char *)&obj->" + fld_format[2] + "_count, sizeof(unsigned int));\n")
@@ -338,7 +341,12 @@ def serialize_structure(c_struct_obj, dir_path):
 			# int *p[25]	
 			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++){\n")
 			target_c.write(tab + tab)
+			target_c.write("if(obj->" + fld_format[2] + "[loop_var])\n")
+			target_c.write(tab + tab + tab)
 			target_c.write("serialize_string(b, (char *)obj->" + fld_format[2] + "[loop_var], " + __get_size_of(fld_format[0]) + ");\n")
+			target_c.write(tab + tab + "else\n")
+			target_c.write(tab + tab + tab)
+			target_c.write("serialize_int32(b, NON_EXISTING_STRUCT);\n")
 			target_c.write(tab)
 			target_c.write("}\n")
 		elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
@@ -422,12 +430,13 @@ def deserialize_structure(c_struct_obj, dir_path):
 			target_c.write("de_serialize_string((char *)&obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
 			#int *p	     serialize_string((char *)obj->p, b , sizeof(int))
-			target_c.write("de_serialize_string((char *)obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + ");\n")
+			target_c.write("de_serialize_string_by_ref((char *)&obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
 			#p_count = 0; int *p
 			target_c.write("de_serialize_string((char *)&obj->" + fld_format[2] + "_count, b, sizeof(unsigned int));\n")
 			target_c.write(tab)
-			target_c.write("obj->" + fld_format[2] + " = calloc(" + __get_size_of(fld_format[0]) + ", obj->" + fld_format[2] + "_count);\n")
+			target_c.write("if(obj->" + fld_format[2] + "_count)\n")
+			target_c.write(tab + tab + "obj->" + fld_format[2] + " = calloc(" + __get_size_of(fld_format[0]) + ", obj->" + fld_format[2] + "_count);\n")
 			target_c.write(tab)
 			target_c.write("for (loop_var = 0; loop_var < obj->" + fld_format[2] + "_count; " + " loop_var++){\n")
 			target_c.write(tab + tab)
@@ -438,11 +447,7 @@ def deserialize_structure(c_struct_obj, dir_path):
 			# int *p[25]	
 			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++)\n")
 			target_c.write(tab + tab)
-			target_c.write("obj->" + fld_format[2] + "[loop_var] = calloc ( 1, " + __get_size_of(fld_format[0]) + ");\n") 
-			target_c.write(tab)
-			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++)\n")
-			target_c.write(tab + tab)
-			target_c.write("de_serialize_string((char *)(obj->" + fld_format[2] + "[loop_var]), b, " + __get_size_of(fld_format[0]) + ");\n")
+			target_c.write("de_serialize_string_by_ref((char *)(&obj->" + fld_format[2] + "[loop_var]), b, " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
 			# person_t p[25] 
 			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++){\n")

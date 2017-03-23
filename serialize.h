@@ -3,7 +3,8 @@
 
 /* Data types supported*/
 
-#define NON_EXISTING_STRUCT     (-4025479151)
+/*Some random -ve integer not likely to be legitimate value*/
+#define NON_EXISTING_STRUCT     (-402547915) 
 
 typedef struct serialized_buffer{
     #define SERIALIZE_BUFFER_DEFAULT_SIZE 512
@@ -37,7 +38,7 @@ void copy_in_serialized_buffer_by_offset(ser_buff_t *b, int size, char *value, i
 /* De-Serialize function */
 
 void de_serialize_string(char *dest, ser_buff_t *b, int val_size);
-
+void de_serialize_string_by_ref(char *dest, ser_buff_t *b, int size);
 
 /* free Resourse*/
 void free_serialize_buffer(ser_buff_t *b);

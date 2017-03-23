@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
-#include "rpc_fn.h"
+#include "rpc_spec.h"
 #include "rpc_uapi.h"
-
+#include "complex_t.h"
 //void gdb(ser_buff_t *b){}
 
 int
@@ -42,7 +42,9 @@ main(int argc, char **argv){
 
 	set_rpc_client_param(5000); // setting recieving buffer size to 5k bytes	
 	//person_t *res = rpc_remote_call(&person, person, 1);
-
+	complex_t com = {3,4};
+	float mag = rpc_sqrt_complex_number(&com);
+	printf("magnitude = %f\n", mag);
 
 //	gdb(b);
 	return 0;

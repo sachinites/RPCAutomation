@@ -1,4 +1,5 @@
-#include "rpc_main.h"
+#include "rpc_common.h"
+#include "rpc_spec.h"
 #include "serialize.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,10 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include "rpc_uapi.h"
-
-#define SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2000
-
+ 
 client_param_t client_param;
 
 void
@@ -34,26 +32,27 @@ client_rpc_send_rcv (ser_buff_t *in_b, ser_buff_t *out_b){
 	
 	sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if(sockfd == -1){
-		printf("igmp socket creation failed\n");
+		printf("socket creation failed\n");
 		return -1;
 	}
 
-	rc = sendto(sockfd, in_b, get_serialize_buffer_size(in_b), 0,
+	rc = sendto(sockfd, in_b->b, get_serialize_buffer_size(in_b), 0,
 		(struct sockaddr *)&dest, sizeof(struct sockaddr));
 
 	printf("%s() : %d bytes sent\n", __FUNCTION__, rc);
+	free_serialize_buffer(in_b);
 
 	if(get_serialize_buffer_length(client_param.recv_ser_b) < 1024){
 		printf("%s() : Warning : Recv buffersize may be insufficient, size = %d\n", 
-			__FUNCTION__, get_serialize_buffer_size(client_param.recv_ser_b));
+			__FUNCTION__, get_serialize_buffer_length(client_param.recv_ser_b));
 	}
 
-	rc = recvfrom(sockfd, (char *)out_b->b, get_serialize_buffer_size(out_b), 0, 
+	rc = recvfrom(sockfd, (char *)out_b->b, get_serialize_buffer_length(out_b), 0, 
 			(struct sockaddr *)&dest, &addr_len);
 
 	printf("%s() : %d bytes recieved\n", __FUNCTION__, rc); 
 		      
-	return 0;
+	return rc;
 }
 
 

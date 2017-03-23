@@ -21,9 +21,6 @@ typedef struct _client_params{
 	ser_buff_t *recv_ser_b;
 } client_param_t;
 
-int
-client_rpc_send_rcv (ser_buff_t *in_b, ser_buff_t *out_b);
-
 unsigned int
 serialized_rpc_hdr_size();
 
