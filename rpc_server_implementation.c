@@ -1,5 +1,8 @@
 #include "stdio.h"
 #include "rpc_spec.h"
+#include "memory.h"
+#include "stdlib.h"
+#include "rpc_server_usercode1.h"
 
 person_t *
 rpc_remote_call(person_t *arg1, person_t arg2, int n){
@@ -10,4 +13,13 @@ rpc_remote_call(person_t *arg1, person_t arg2, int n){
 float
 rpc_sqrt_complex_number(complex_t *arg1){
 	return (float)(arg1->real * arg1->real) + (arg1->im * arg1->im);
+}
+
+int
+rpc_MaxSumPath(tree_t *tree){
+	if(!tree || !tree->root)
+		return 0;
+
+	max_sum_res_t res =  _MaxSumPath(tree->root);
+	return res.recycle_sum;
 }

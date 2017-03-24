@@ -53,7 +53,6 @@ main(int argc, char **argv){
 	printf("Server ready to service rpc calls\n");
 READ:
 	len = recvfrom(sock_udp_fd, (char *)recv_b->b, SERVER_RECV_BUFF_MAX_SIZE, 0,(struct sockaddr *)&client_addr, &addr_len);
-	printf("Recvd From ip = %-20s, bytes recvd = %d\n", inet_ntoa(client_addr.sin_addr), len);
 
 	out_b = rpc_server_process_msg(recv_b);
 

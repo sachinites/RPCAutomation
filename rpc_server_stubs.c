@@ -8,7 +8,10 @@
 #include "company_t_xdr_serialize.h"
 #include "complex_t.h"
 #include "complex_t_xdr_serialize.h"
-
+#include "tree_t.h"
+#include "tree_node_t.h"
+#include "tree_t_xdr_serialize.h"
+#include "tree_node_t_xdr_serialize.h"
 
 ser_buff_t *
 stub_rpc_remote_call(ser_buff_t *b){
@@ -39,5 +42,19 @@ stub_rpc_sqrt_complex_number(ser_buff_t *b){
 	/* step 3 : Marshalling the result*/
 	init_serialized_buffer(&out_b);
 	serialize_string(out_b, (char *)&res, sizeof(float));
+	return out_b;
+}
+
+ser_buff_t *
+stub_rpc_MaxSumPath(ser_buff_t *b){
+	
+	ser_buff_t *out_b = NULL;
+	/* step 1 : Un-Marshalling of ser buffer into arguments*/
+	tree_t *arg1 = tree_t_xdr_deserialize(b);
+	/* step 2 : call the server RPC */
+	int res = rpc_MaxSumPath(arg1);
+	/* step 3 : Marshalling the result*/
+	init_serialized_buffer(&out_b);
+	serialize_string(out_b, (char *)&res, sizeof(int));
 	return out_b;
 }

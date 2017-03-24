@@ -8,5 +8,6 @@ void rpc_server_load_rpcs(){
 
 	rpc_callback_array[rpc_remote_call_id] = stub_rpc_remote_call;
 	rpc_callback_array[rpc_sqrt_complex_number_id] = stub_rpc_sqrt_complex_number;
+	rpc_callback_array[rpc_MaxSumPath_id] = stub_rpc_MaxSumPath;
 }
 

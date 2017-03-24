@@ -6,6 +6,9 @@
 #include "rpc_spec.h"
 #include "rpc_uapi.h"
 #include "complex_t.h"
+#include "tree_t.h"
+#include "tree_node_t.h"
+
 //void gdb(ser_buff_t *b){}
 
 int

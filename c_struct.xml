@@ -28,6 +28,19 @@
 	<member name="im" dataType="UINT32" description="imaginary part"/>
 </C_Structure>
 
+<C_Structure name="tree_node_t" description="tree node">
+        <member name="left" dataType="OBJECT" isPTR="true" referredObject="tree_node_t" description="left child"/>
+        <member name="right" dataType="OBJECT" isPTR="true" referredObject="tree_node_t" description="right child"/>
+	<member name="data" dataType="INT32" description="data"/>
+	<member name="isVisited" dataType="CHAR" description="isVisited"/>
+	
+</C_Structure>
+
+<C_Structure name="tree_t" description="tree">
+        <member name="root" dataType="OBJECT" isPTR="true" referredObject="tree_node_t" description="left child"/>
+        <member name="right" dataType="OBJECT" isPTR="true" referredObject="tree_node_t" description="right child"/>
+</C_Structure>
+
 <!--
 <C_Structure name="igmp_snooping_vlan_group" description="Group information on an interface">
         <Member name="grp_ip_addr" dataType="IPV4ADDRESS" description="Igmp group address"/>
