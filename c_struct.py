@@ -126,7 +126,7 @@ def build_structure_list_from_xml(xml_file_name):
 		fld_list = []
 	
 		fields_collection = c_struct.getElementsByTagName("member")
-
+		ist_fld = "true" ;
 		for _field in fields_collection:
 			
 			fld_obj = field ()
@@ -148,6 +148,17 @@ def build_structure_list_from_xml(xml_file_name):
 			
 			if _field.hasAttribute("isPTR"):
 				fld_obj.isptr = _field.getAttribute("isPTR")
+				if fld_obj.isptr == "true" and ist_fld == "true":
+					rpc_padd_fld = field ()
+					rpc_padd_fld.field_name = "rpc_padd"
+					rpc_padd_fld.datatype = "CHAR"
+					rpc_padd_fld.desc = "rpc padd field"
+					rpc_padd_fld.referredObject = None
+					rpc_padd_fld.isptr = "false"
+					rpc_padd_fld.vector = "false"
+					rpc_padd_fld.cDataArraySize = None
+					fld_list.append(rpc_padd_fld)
+					ist_fld = "false";
 			else:
 				fld_obj.isptr = "false"
 	

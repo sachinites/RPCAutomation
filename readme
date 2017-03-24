@@ -9,8 +9,8 @@ Adding a New RPC Maually :
 
 4. Add the RPC signatire also in rpc_spec.h.
 
-5. In rpc_client_implementation.c, write the implementation of a RPC fn for client side.
-	5.1 $include structure.h and structure_xdr_serialize.h files also in rpc_client_implementation.c file
+5. In rpc_client_stubs.c, write the implementation of a RPC fn for client side.
+	5.1 $include structure.h and structure_xdr_serialize.h files also in rpc_client_stubs.c file
 
 6. In file rpc_server_stubs.h, make an entry of stub of your RPC fn. The stub has the fixed format : 
 		ser_buff_t * <stub name> (ser_buff_t *)
@@ -25,3 +25,5 @@ Adding a New RPC Maually :
 10. Add #includes <structure.h> files in test.c and call the RPC
 
 11. rpc_server_usercode1.c/.h & rpc_server_common_usr.h are supporting files to enable the user to implement the server side RPC implementation. User can implemenent his user defined business logic in these files which are internal fnd of RPC call. You can define more such header files/.c files as per your will.
+
+12. Edit the make file to include new C files

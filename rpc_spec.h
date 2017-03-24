@@ -12,6 +12,7 @@ typedef enum _rpc_procedures_id{
 	rpc_remote_call_id = 0,
 	rpc_sqrt_complex_number_id,
 	rpc_MaxSumPath_id,
+	rpc_ll_sum_id,
 	rpc_procedures_max_id
 } rpc_proc_id;
 
@@ -20,6 +21,7 @@ typedef enum _rpc_procedures_id{
 #include "complex_t.h"
 #include "tree_node_t.h"
 #include "tree_t.h"
+#include "ll_node_t.h"
 
 /* Add the fn signature*/
 person_t *
@@ -29,4 +31,6 @@ float
 rpc_sqrt_complex_number(complex_t *arg1);
 
 int rpc_MaxSumPath(tree_t *tree);
+
+int rpc_ll_sum(ll_node_t *arg1);
 #endif

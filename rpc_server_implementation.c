@@ -23,3 +23,11 @@ rpc_MaxSumPath(tree_t *tree){
 	max_sum_res_t res =  _MaxSumPath(tree->root);
 	return res.recycle_sum;
 }
+
+int
+rpc_ll_sum(ll_node_t *head){
+	int sum = 0;
+	for(; head; head = head->next)
+		sum+=head->data;
+	return sum;
+}

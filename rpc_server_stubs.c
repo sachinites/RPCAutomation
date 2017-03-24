@@ -12,6 +12,9 @@
 #include "tree_node_t.h"
 #include "tree_t_xdr_serialize.h"
 #include "tree_node_t_xdr_serialize.h"
+#include "ll_node_t.h"
+#include "ll_node_t_xdr_serialize.h"
+
 
 ser_buff_t *
 stub_rpc_remote_call(ser_buff_t *b){
@@ -58,3 +61,18 @@ stub_rpc_MaxSumPath(ser_buff_t *b){
 	serialize_string(out_b, (char *)&res, sizeof(int));
 	return out_b;
 }
+
+ser_buff_t *
+stub_rpc_ll_sum(ser_buff_t *b){
+	
+	ser_buff_t *out_b = NULL;
+	/* step 1 : Un-Marshalling of ser buffer into arguments*/
+	ll_node_t *arg1 = ll_node_t_xdr_deserialize(b);
+	/* step 2 : call the server RPC */
+	int res = rpc_ll_sum (arg1);
+	/* step 3 : Marshalling the result*/
+	init_serialized_buffer(&out_b);
+	serialize_string(out_b, (char *)&res, sizeof(int));
+	return out_b;
+}
+

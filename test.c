@@ -8,6 +8,7 @@
 #include "complex_t.h"
 #include "tree_t.h"
 #include "tree_node_t.h"
+#include "ll_node_t.h"
 
 //void gdb(ser_buff_t *b){}
 
@@ -48,6 +49,15 @@ main(int argc, char **argv){
 	complex_t com = {3,4};
 	float mag = rpc_sqrt_complex_number(&com);
 	printf("magnitude = %f\n", mag);
+
+	ll_node_t *head = calloc(1, sizeof(ll_node_t));
+	head->data = 1;
+	head->next =  calloc(1, sizeof(ll_node_t));
+	head->next->data =2;
+	head->next->next = calloc(1, sizeof(ll_node_t));
+	head->next->next->data = 3;
+
+	printf("sum of ll = %d\n", rpc_ll_sum(head));
 
 //	gdb(b);
 	return 0;
