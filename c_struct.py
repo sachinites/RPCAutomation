@@ -158,7 +158,6 @@ def build_structure_list_from_xml(xml_file_name):
 					rpc_padd_fld.vector = "false"
 					rpc_padd_fld.cDataArraySize = None
 					fld_list.append(rpc_padd_fld)
-					ist_fld = "false";
 			else:
 				fld_obj.isptr = "false"
 	
@@ -172,6 +171,7 @@ def build_structure_list_from_xml(xml_file_name):
 			else:
 				fld_obj.cDataArraySize = None
 
+			ist_fld = "false";
 			fld_list.append(fld_obj)
 			
 		c_struct_obj.field_list = fld_list		

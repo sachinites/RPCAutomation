@@ -45,25 +45,24 @@
         <member name="next" dataType="OBJECT" isPTR="true" referredObject="ll_node_t" description="left child"/>
 	<member name="data" dataType="INT32" description="data"/>
 </C_Structure>
-<!--
-<C_Structure name="igmp_snooping_vlan_group" description="Group information on an interface">
-        <Member name="grp_ip_addr" dataType="IPV4ADDRESS" description="Igmp group address"/>
-        <Member name="member_ports" dataType="CHAR" isPTR="true" vector="true" description="group membership ports"/>
+
+<C_Structure name="igmp_snooping_vlan_group_t" description="Group information on an interface">
+        <member name="grp_ip_addr" dataType="CHARARRAY" cDataArraySize="15" description="Igmp group address"/>
+        <member name="member_ports" dataType="CHAR" isPTR="true" vector="true" description="group membership ports"/>
 </C_Structure>
 
 
-<C_Structure name="igmp_snooping_vlan" description="Igmp snooping enabled vlan">
-        <Member name="vlan_id" dataType="UINT32" description="vlan id"/>
-        <Member name="multicast_router_ports" dataType="CHAR" isPTR="true" vector="true" description="Multicast Router ports"/>
-        <Member name="is_querier" dataType="UINT32" description="Is interface Querier enabled"/>
-        <Member name="igmp_operation_mode" dataType="UINT32" description="IGMP Operation mode"/>
-        <Member name="fast_leave" dataType="UINT32" description="Is Fast Leave enabled"/>
-        <Member name="qmrt" dataType="UINT32" description="Igmp query response time"/>
-        <Member name="lmqi" dataType="UINT32" description="Last Member Query Interval"/>
-        <Member name="qi" dataType="UINT32" description="Query Interval"/>
-        <Member name="version" dataType="UINT32" description="Igmp Version"/>
-        <Member name="num_of_mcast_grps" dataType="UINT32" description="Number of Multicast Groups"/>
-        <Member name="vlan_groups" dataType="OBJECT" vector="true" isPTR="true" referredObject="igmp_snooping_vlan_group" description="Igmp groups on a vlan"/>
+<C_Structure name="igmp_snooping_vlan_t" description="Igmp snooping enabled vlan">
+        <member name="vlan_id" dataType="UINT32" description="vlan id"/>
+        <member name="multicast_router_ports" dataType="CHAR" isPTR="true" vector="true" description="Multicast Router ports"/>
+        <member name="is_querier" dataType="UINT32" description="Is interface Querier enabled"/>
+        <member name="igmp_operation_mode" dataType="UINT32" description="IGMP Operation mode"/>
+        <member name="fast_leave" dataType="UINT32" description="Is Fast Leave enabled"/>
+        <member name="qmrt" dataType="UINT32" description="Igmp query response time"/>
+        <member name="lmqi" dataType="LONG" description="Last Member Query Interval"/>
+        <member name="qi" dataType="UINT32" description="Query Interval"/>
+        <member name="version" dataType="UINT32" description="Igmp Version"/>
+        <member name="num_of_mcast_grps" dataType="UINT32" description="Number of Multicast Groups"/>
+        <member name="vlan_groups" dataType="OBJECT" vector="true" isPTR="true" referredObject="igmp_snooping_vlan_group" description="Igmp groups on a vlan"/>
 </C_Structure>
--->
 </RPC_Structures>
