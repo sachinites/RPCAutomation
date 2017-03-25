@@ -734,7 +734,7 @@ def generate_rpc_spec_file(xml_data_obj, dir_path):
 	target.close()
 		
 
-def generate_server_stubs(xml_data_obj, dir_path):
+def generate_server_stubs_c(xml_data_obj, dir_path):
 	target = open(dir_path + "/rpc_server_stubs.c", 'w')
 	target.write("#include \"rpc_spec.h\"\n")
 	target.write("#include \"serialize.h\"\n")
@@ -850,6 +850,34 @@ def generate_client_stubs(xml_data_obj, dir_path):
 	target.close()
 
 
+def generate_rpc_server_init(xml_data_obj, dir_path):
+	target = open(dir_path + "/rpc_server_init.c", 'w')
+	target.write("#include \"rpc_spec.h\"\n")
+	target.write("#include \"rpc_server_stubs.h\"\n")
+	target.write("\n")
+	target.write("typedef ser_buff_t* (*rpc_callback)(ser_buff_t *b);\n")
+	target.write("rpc_callback rpc_callback_array[rpc_procedures_max_id];\n")
+	target.write("\n")
+	target.write("void rpc_server_load_rpcs(){\n")
+	tab = "	"
+	for rpc_obj in xml_data_obj.rpc_list:
+		target.write(tab + "rpc_callback_array[" + rpc_obj.rpc_name + "_id] = stub_" + rpc_obj.rpc_name + ";\n")
+	target.write("}\n") 
+	target.close()
+
+
+def generate_rpc_server_stubs_h(xml_data_obj, dir_path):
+	target = open(dir_path + "/rpc_server_stubs.h", 'w')
+	target.write("#ifndef __RPC_SERVER__STUB__\n")
+	target.write("#define __RPC_SERVER__STUB__\n")
+	target.write("\n\n")
+	target.write("typedef struct serialized_buffer ser_buff_t;\n")
+	target.write("\n\n")
+	for rpc_obj in xml_data_obj.rpc_list:
+		target.write("ser_buff_t *\nstub_" + rpc_obj.rpc_name + "(ser_buff_t *b);\n")
+		target.write("\n") 
+	target.write("#endif")
+	
 def generate_copy_fn(c_struct_obj, dir_path):
 	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
 	target_c = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.c", 'a')
@@ -881,4 +909,6 @@ if __name__ == "__main__":
 		deserialize_structure(c_struct_obj, ".")
 	generate_rpc_spec_file(xml_data_obj, ".")
 	generate_client_stubs(xml_data_obj, ".")
-	generate_server_stubs(xml_data_obj, ".")
+	generate_server_stubs_c(xml_data_obj, ".")
+	generate_rpc_server_init(xml_data_obj, ".")
+	generate_rpc_server_stubs_h(xml_data_obj, ".")
