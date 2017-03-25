@@ -6,6 +6,68 @@ import os,sys
 
 # Open XML document using minidom parser
 
+class rpc:
+	def __init__(self):
+		rpc_name=""
+		rpc_arg_list = []
+		rpc_return_type=None
+
+	def print_rpc(self):
+		print "rpc name = " + self.rpc_name + " arg_lst_count = " + str(len(self.rpc_arg_list))
+		for arg_obj in self.rpc_arg_list:
+			if arg_obj.arg_name != None:
+				print "arg name = " + arg_obj.arg_name 
+			else:
+				print "arg name = None"
+			
+			if arg_obj.isPTR == None:	
+				print "arg ptr = None"
+			else:
+				print "arg ptr = " + arg_obj.isPTR
+
+			if arg_obj.dataType == None:
+				print "Datatype = None"
+			else:
+				print "arg_obj.dataType = " + arg_obj.dataType
+			
+			if arg_obj.referredObject == None:
+				print "referredObject = None"
+			else:
+				print "referredObject = " + arg_obj.referredObject
+
+		print "Return type : "
+		arg_obj = self.rpc_return_type
+		arg_obj.print_rpc_arg()	
+		print "----------\n"	
+
+class rpc_arg:
+	def __init__(self):
+		arg_name=""
+		dataType=None
+		isPTR="false"
+		referredObject=None
+
+	def print_rpc_arg(self):
+		if self.arg_name != None:
+			print "arg name = " + self.arg_name 
+		else:
+			print "arg name = None"
+		
+		if self.isPTR == None:	
+			print "arg ptr = None"
+		else:
+			print "arg ptr = " + self.isPTR
+
+		if self.dataType == None:
+			print "Datatype = None"
+		else:
+			print "arg_obj.dataType = " + self.dataType + "\n"
+		
+		if self.referredObject == None:
+			print "referredObject = None\n"
+		else:
+			print "referredObject = " + self.referredObject + "\n"
+
 class field:
 	def __init__(self):
 		field_name = ""
@@ -83,6 +145,10 @@ class c_structures:
 		for ext_ref in self.ext_references_incomplete:
 			print "         ext ref inc: " + ext_ref
 
+class xml_data:
+	def __init__(self):
+		self.c_struct_obj_list = []
+		self.rpc_list = []
 
 def __get_structure_external_references_list(c_struct_obj):
 	ext_references_complete = []
@@ -112,12 +178,15 @@ def __get_structure_external_references_list(c_struct_obj):
 
 def build_structure_list_from_xml(xml_file_name):
 
-	c_struct_obj_list = []	
+	c_struct_obj_list = []
+	rpc_list = []
+	xml_data_obj = xml_data()
 	DOMTree = xml.dom.minidom.parse(xml_file_name)
 	collection = DOMTree.documentElement
 
 # Get all the C Structures in the collection
 	c_structures_collection = collection.getElementsByTagName("C_Structure")
+	rpc_collection = collection.getElementsByTagName("RPC_spec")
 
 	for c_struct in c_structures_collection:
 		c_struct_obj = c_structures ()
@@ -178,8 +247,56 @@ def build_structure_list_from_xml(xml_file_name):
 		__get_structure_external_references_list (c_struct_obj)
 
 		c_struct_obj_list.append(c_struct_obj)
+	xml_data_obj.c_struct_obj_list = c_struct_obj_list
+	
+	for rpc_it in rpc_collection:
+		rpc_obj = rpc()
+		rpc_obj.rpc_name = rpc_it.getAttribute("rpc_name")
+		arg_lst = []
+		
+		arg_collection = rpc_it.getElementsByTagName("member")
+		i = 0
+		for arg_it in arg_collection:	
+			print "Arg # = " + str(i)
+			i += 1
+			arg_obj = rpc_arg()
+			if arg_it.hasAttribute("name"):
+				print "Arg"
+				arg_obj.arg_name = arg_it.getAttribute("name")
+			else:
+				print "Return type"
+				arg_obj.arg_name = None
+				arg_obj.dataType = arg_it.getAttribute("dataType")
+				if arg_obj.dataType == "OBJECT":
+					arg_obj.referredObject = arg_it.getAttribute("referredObject")
+				else:
+					arg_obj.referredObject = None
+				arg_obj.isPTR= arg_it.getAttribute("isPTR")
+				rpc_obj.rpc_return_type =  arg_obj
+				print "Return type found\n"
+				rpc_obj.rpc_return_type.print_rpc_arg()
+				continue
+				
+			if arg_it.hasAttribute("dataType"):
+				 arg_obj.dataType = arg_it.getAttribute("dataType")
 
-	return c_struct_obj_list
+			if arg_it.hasAttribute("isPTR"):
+				arg_obj.isPTR = arg_it.getAttribute("isPTR")
+			else:
+				arg_obj.isPTR = None
+
+			if arg_it.hasAttribute("referredObject"):
+				arg_obj.referredObject = arg_it.getAttribute("referredObject")
+			else:
+				arg_obj.referredObject = None
+		
+			arg_lst.append(arg_obj)
+		rpc_obj.rpc_arg_list = arg_lst
+		#rpc_obj.print_rpc()
+		rpc_list.append(rpc_obj)
+
+	xml_data_obj.rpc_arg_list = rpc_list			
+	return xml_data_obj
 
 
 def write_field_format(target_file, fld_format, parent_struct_name):
@@ -501,6 +618,105 @@ def deserialize_structure(c_struct_obj, dir_path):
 	target_c.write("}")
 	target_c.close()
 	return
+		
+def generate_rpc_spec_file(xml_data_obj, dir_path):
+	target = open(dir_path + "/rpc_spec.h", 'w')
+	target.write("#ifndef __RPC_SPEC__\n")
+	target.write("#define __RPC_SPEC__\n")
+	
+	target.write("\n\n#define SERVER_IP	\"127.0.0.1\"\n")
+	target.write("#define SERVER_PORT	2000\n")
+
+	target.write("\n#define SERVER_RECV_BUFF_MAX_SIZE	(1024 * 5)\n")
+	
+	target.write("\n\n")
+
+	tab = "	"
+
+	# iterate over all RPCs and print their IDs
+	target.write("typedef enum _rpc_procedures_id{\n")
+
+	if len(xml_data_obj.rpc_arg_list) == 1:
+		target.write(tab + xml_data_obj.rpc_arg_list[0].rpc_name + "_id\n")
+		target.write(tab + "rpc_procedures_max_id\n")
+		target.write("} rpc_proc_id;\n\n\n")
+	else:
+		for i in range(len(xml_data_obj.rpc_arg_list) -1):
+			target.write(tab + xml_data_obj.rpc_arg_list[i].rpc_name + "_id,\n")
+		target.write(tab + xml_data_obj.rpc_arg_list[(len(xml_data_obj.rpc_arg_list) -1)].rpc_name + "_id,\n")
+		target.write(tab + "rpc_procedures_max_id\n")
+		target.write("} rpc_proc_id;\n\n\n")
+
+	# iterare over all structures and print #includes
+	for struct_obj in xml_data_obj.c_struct_obj_list:
+		target.write("#include \""  + struct_obj.struct_name + ".h\"\n")
+
+
+	target.write("\n\n")
+	# iterate over all RPCs and print their Signatures
+	for rpc_obj in xml_data_obj.rpc_arg_list:
+		sign = ""
+		rpc_return_type = rpc_obj.rpc_return_type
+		if rpc_return_type.dataType != "OBJECT":
+			sign += __get_c_datatype(rpc_return_type.dataType)
+		else:
+			 sign += rpc_return_type.referredObject
+		if rpc_return_type.isPTR == "true":
+			sign += " *\n"
+		else:
+			sign += "\n"
+
+		sign += rpc_obj.rpc_name + "("
+		
+		if len(rpc_obj.rpc_arg_list) == 1:
+			arg_obj = rpc_obj.rpc_arg_list[0]
+			if arg_obj.dataType == "OBJECT":
+				sign += arg_obj.referredObject
+			else:
+				sign += __get_c_datatype(arg_obj.dataType)
+			
+			if arg_obj.isPTR == "true":
+				sign += " *"
+			else:
+				 sign += " "
+		
+			sign += arg_obj.arg_name
+			sign += ");\n\n"
+			
+
+		else:
+			for i in range(len(rpc_obj.rpc_arg_list) -1):
+				arg_obj = rpc_obj.rpc_arg_list[i]
+				if arg_obj.dataType == "OBJECT":
+					sign += arg_obj.referredObject
+				else:
+					sign += __get_c_datatype(arg_obj.dataType)
+				
+				if arg_obj.isPTR == "true":
+					sign += " *"
+				else:
+					 sign += " "
+		
+				sign += arg_obj.arg_name + ", "
+
+			arg_obj = rpc_obj.rpc_arg_list[len(rpc_obj.rpc_arg_list) -1]
+			if arg_obj.dataType == "OBJECT":
+				sign += arg_obj.referredObject
+			else:
+				sign += __get_c_datatype(arg_obj.dataType)
+			
+			if arg_obj.isPTR == "true":
+				sign += " *"
+			else:
+				 sign += " "
+		
+			sign += arg_obj.arg_name + ");\n\n"
+
+		target.write(sign)
+	target.write("#endif\n")
+	target.close()
+		
+	
 
 def generate_copy_fn(c_struct_obj, dir_path):
 	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
@@ -525,9 +741,11 @@ def generate_free_fn(c_struct_obj, dir_path):
 
 
 if __name__ == "__main__":
-	xml_file_name = "c_struct.xml" 
-	c_struct_obj_list =  build_structure_list_from_xml(xml_file_name)
-	convert_xml_to_c_structures(xml_file_name, ".", c_struct_obj_list)
-	for c_struct_obj in c_struct_obj_list:
+	xml_file_name = "c_struct.xml"
+	xml_data_obj =  build_structure_list_from_xml(xml_file_name)
+	convert_xml_to_c_structures(xml_file_name, ".", xml_data_obj.c_struct_obj_list)
+	for c_struct_obj in xml_data_obj.c_struct_obj_list:
 		serialize_structure(c_struct_obj, ".")
 		deserialize_structure(c_struct_obj, ".")
+	print "No of RPCs = " + str(len(xml_data_obj.rpc_arg_list))
+	generate_rpc_spec_file(xml_data_obj, ".")

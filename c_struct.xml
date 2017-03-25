@@ -65,4 +65,26 @@
         <member name="num_of_mcast_grps" dataType="UINT32" description="Number of Multicast Groups"/>
         <member name="vlan_groups" dataType="OBJECT" vector="true" isPTR="true" referredObject="igmp_snooping_vlan_group" description="Igmp groups on a vlan"/>
 </C_Structure>
+
+<RPC_spec rpc_name="rpc_remote_call">
+	<member name="employee" dataType="OBJECT" referredObject="person_t" isPTR="true" paratype="param"/>
+	<member name="manager" dataType="OBJECT" referredObject="person_t" isPTR="false" paratype="RETURN_TYPE"/> 
+	<member name="age" dataType="INT32" isPTR="false" paratype="param"/>
+	<member dataType="OBJECT" referredObject="person_t" isPTR="true" paratype="RETURN_TYPE"/>
+</RPC_spec>
+
+<RPC_spec rpc_name="rpc_sqrt_complex_number">
+	<member name="arg1" dataType="OBJECT" referredObject="complex_t" isPTR="true" paratype="param"/>
+	<member dataType="FLOAT" isPTR="false" paratype="RETURN_TYPE"/> 
+</RPC_spec>
+
+<RPC_spec rpc_name="rpc_MaxSumPath">
+	<member name="tree" dataType="OBJECT" referredObject="tree_t" isPTR="true" paratype="param"/>
+	<member dataType="INT32"  paratype="RETURN_TYPE"/>
+</RPC_spec>
+
+<RPC_spec rpc_name="rpc_ll_sum">
+	<member name="arg1" dataType="OBJECT" referredObject="ll_node_t" isPTR="true" paratype="param"/>
+	<member dataType="INT32"  paratype="RETURN_TYPE"/>
+</RPC_spec>
 </RPC_Structures>

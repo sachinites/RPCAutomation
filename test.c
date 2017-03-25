@@ -56,6 +56,8 @@ main(int argc, char **argv){
 	head->next->data =2;
 	head->next->next = calloc(1, sizeof(ll_node_t));
 	head->next->next->data = 3;
+	head->next->next->next = calloc(1, sizeof(ll_node_t));
+	head->next->next->next->data = 4;
 
 	printf("sum of ll = %d\n", rpc_ll_sum(head));
 
