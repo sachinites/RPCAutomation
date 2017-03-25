@@ -40,6 +40,20 @@ class rpc:
 		arg_obj.print_rpc_arg()	
 		print "----------\n"	
 
+	def contatenate_arg_name(self):
+		_str=""
+		if len(self.rpc_arg_list) == 0:
+			return _str
+
+		if len(self.rpc_arg_list) == 1:
+			return self.rpc_arg_list[0].arg_name
+
+		for i in range(len(self.rpc_arg_list) -1):
+			_str += self.rpc_arg_list[i].arg_name + ", "
+
+		_str += self.rpc_arg_list[len(self.rpc_arg_list) -1].arg_name
+		return _str
+
 class rpc_arg:
 	def __init__(self):
 		arg_name=""
@@ -719,7 +733,60 @@ def generate_rpc_spec_file(xml_data_obj, dir_path):
 	target.write("\n\n#endif\n")
 	target.close()
 		
-	
+
+def generate_server_stubs(xml_data_obj, dir_path):
+	target = open(dir_path + "/rpc_server_stubs.c", 'w')
+	target.write("#include \"rpc_spec.h\"\n")
+	target.write("#include \"serialize.h\"\n")
+	target.write("\n")
+	for struct_obj in xml_data_obj.c_struct_obj_list:
+		target.write("#include \"" + struct_obj.struct_name + ".h\"\n")
+		target.write("#include \"" + struct_obj.struct_name + "_xdr_serialize.h\"\n")
+
+	tab = "	"
+	target.write("\n\n")
+	for rpc_obj in xml_data_obj.rpc_list:
+		target.write("ser_buff_t *\n")
+		target.write("stub_" + rpc_obj.rpc_name + "(ser_buff_t *b){\n")
+		target.write(tab + "ser_buff_t *out_b = 0;\n")
+		for arg in rpc_obj.rpc_arg_list:
+			if arg.dataType != "OBJECT" and arg.isPTR == "false":
+				target.write(tab + __get_c_datatype(arg.dataType) + " " + arg.arg_name + ";\n")
+				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + ", b , " + __get_size_of(arg.dataType) + ");\n") 
+			elif arg.dataType != "OBJECT" and arg.isPTR == "true":
+				target.write(tab + __get_c_datatype(arg.dataType) + " *" + arg.arg_name + ";\n")
+				target.write(tab + "de_serialize_string((char *)" + arg.arg_name + ", b , " + __get_size_of(arg.dataType) + ");\n") 
+			elif arg.dataType == "OBJECT" and arg.isPTR == "false":
+				target.write(tab + arg.referredObject + " " + arg.arg_name + " = *" + arg.referredObject + "_xdr_deserialize(b);\n")
+			elif arg.dataType == "OBJECT" and arg.isPTR == "true":
+				target.write(tab + arg.referredObject + " *" + arg.arg_name + " = " + arg.referredObject + "_xdr_deserialize(b);\n")
+
+		rpc_return_type = rpc_obj.rpc_return_type
+		arg_sequence = rpc_obj.contatenate_arg_name()
+		if rpc_return_type.dataType != "OBJECT" and rpc_return_type.isPTR == "false":
+			target.write(tab + __get_c_datatype(rpc_return_type.dataType) + " res = " + rpc_obj.rpc_name + "(" + arg_sequence + ");\n")
+		elif rpc_return_type.dataType != "OBJECT" and rpc_return_type.isPTR == "true":
+			target.write(tab + __get_c_datatype(rpc_return_type.dataType) + " *res = " + rpc_obj.rpc_name + "(" + arg_sequence + ");\n")
+		elif rpc_return_type.dataType == "OBJECT" and rpc_return_type.isPTR == "false":
+			target.write(tab + rpc_return_type.referredObject + " res = *" +  rpc_obj.rpc_name + "(" + arg_sequence + ");\n")
+		elif rpc_return_type.dataType == "OBJECT" and rpc_return_type.isPTR == "true":
+			target.write(tab + rpc_return_type.referredObject + " * res = " + rpc_obj.rpc_name + "(" + arg_sequence + ");\n")
+
+		target.write(tab + "init_serialized_buffer(&out_b);\n")
+		
+		if rpc_return_type.dataType != "OBJECT" and rpc_return_type.isPTR == "false":
+			target.write(tab + "serialize_string(out_b, (char *)&res, " + __get_size_of(rpc_return_type.dataType) + ");\n")
+		elif rpc_return_type.dataType != "OBJECT" and rpc_return_type.isPTR == "true":
+			target.write(tab + "serialize_string(out_b, (char *)res, " + __get_size_of(rpc_return_type.dataType) + ");\n")
+		elif rpc_return_type.dataType == "OBJECT" and rpc_return_type.isPTR == "false":
+			target.write(tab + rpc_return_type.referredObject + "_xdr_serialize(&res, out_b);\n")
+		elif rpc_return_type.dataType == "OBJECT" and rpc_return_type.isPTR == "true":
+			target.write(tab + rpc_return_type.referredObject + "_xdr_serialize(res, out_b);\n")
+
+		target.write(tab + "return out_b;\n}\n\n")
+	target.close()
+
+
 def generate_client_stubs(xml_data_obj, dir_path):
 	target = open(dir_path + "/rpc_client_stubs.c", 'w')
 	target.write("#include \"rpc_spec.h\"\n")
@@ -814,3 +881,4 @@ if __name__ == "__main__":
 		deserialize_structure(c_struct_obj, ".")
 	generate_rpc_spec_file(xml_data_obj, ".")
 	generate_client_stubs(xml_data_obj, ".")
+	generate_server_stubs(xml_data_obj, ".")
