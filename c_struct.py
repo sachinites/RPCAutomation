@@ -257,24 +257,21 @@ def build_structure_list_from_xml(xml_file_name):
 		arg_collection = rpc_it.getElementsByTagName("member")
 		i = 0
 		for arg_it in arg_collection:	
-			print "Arg # = " + str(i)
-			i += 1
 			arg_obj = rpc_arg()
 			if arg_it.hasAttribute("name"):
-				print "Arg"
 				arg_obj.arg_name = arg_it.getAttribute("name")
 			else:
-				print "Return type"
 				arg_obj.arg_name = None
 				arg_obj.dataType = arg_it.getAttribute("dataType")
 				if arg_obj.dataType == "OBJECT":
 					arg_obj.referredObject = arg_it.getAttribute("referredObject")
 				else:
 					arg_obj.referredObject = None
-				arg_obj.isPTR= arg_it.getAttribute("isPTR")
+				if arg_it.hasAttribute("isPTR"):
+					arg_obj.isPTR = arg_it.getAttribute("isPTR")
+				else:
+					arg_obj.isPTR = "false"
 				rpc_obj.rpc_return_type =  arg_obj
-				print "Return type found\n"
-				rpc_obj.rpc_return_type.print_rpc_arg()
 				continue
 				
 			if arg_it.hasAttribute("dataType"):
@@ -295,7 +292,7 @@ def build_structure_list_from_xml(xml_file_name):
 		#rpc_obj.print_rpc()
 		rpc_list.append(rpc_obj)
 
-	xml_data_obj.rpc_arg_list = rpc_list			
+	xml_data_obj.rpc_list = rpc_list			
 	return xml_data_obj
 
 
@@ -618,7 +615,68 @@ def deserialize_structure(c_struct_obj, dir_path):
 	target_c.write("}")
 	target_c.close()
 	return
+
+def get_rpc_signature(rpc_obj):
+	sign = ""
+	rpc_return_type = rpc_obj.rpc_return_type
+	if rpc_return_type.dataType != "OBJECT":
+		sign += __get_c_datatype(rpc_return_type.dataType)
+	else:
+		 sign += rpc_return_type.referredObject
+
+	if rpc_return_type.isPTR == "true":
+		sign += " *\n"
+	else:
+		sign += "\n"
+
+	sign += rpc_obj.rpc_name + "("
 		
+	if len(rpc_obj.rpc_arg_list) == 1:
+		arg_obj = rpc_obj.rpc_arg_list[0]
+		if arg_obj.dataType == "OBJECT":
+			sign += arg_obj.referredObject
+		else:
+			sign += __get_c_datatype(arg_obj.dataType)
+		
+		if arg_obj.isPTR == "true":
+			sign += " *"
+		else:
+			 sign += " "
+	
+		sign += arg_obj.arg_name
+		sign += ")"
+
+	else:
+		for i in range(len(rpc_obj.rpc_arg_list) -1):
+			arg_obj = rpc_obj.rpc_arg_list[i]
+			if arg_obj.dataType == "OBJECT":
+				sign += arg_obj.referredObject
+			else:
+				sign += __get_c_datatype(arg_obj.dataType)
+			
+			if arg_obj.isPTR == "true":
+				sign += " *"
+			else:
+				 sign += " "
+	
+			sign += arg_obj.arg_name + ", "
+			
+		arg_obj = rpc_obj.rpc_arg_list[len(rpc_obj.rpc_arg_list) -1]
+
+		if arg_obj.dataType == "OBJECT":
+			sign += arg_obj.referredObject
+		else:
+			sign += __get_c_datatype(arg_obj.dataType)
+		
+		if arg_obj.isPTR == "true":
+			sign += " *"
+		else:
+			 sign += " "
+
+		sign += arg_obj.arg_name + ")"
+	return sign
+
+
 def generate_rpc_spec_file(xml_data_obj, dir_path):
 	target = open(dir_path + "/rpc_spec.h", 'w')
 	target.write("#ifndef __RPC_SPEC__\n")
@@ -636,14 +694,14 @@ def generate_rpc_spec_file(xml_data_obj, dir_path):
 	# iterate over all RPCs and print their IDs
 	target.write("typedef enum _rpc_procedures_id{\n")
 
-	if len(xml_data_obj.rpc_arg_list) == 1:
-		target.write(tab + xml_data_obj.rpc_arg_list[0].rpc_name + "_id\n")
+	if len(xml_data_obj.rpc_list) == 1:
+		target.write(tab + xml_data_obj.rpc_list[0].rpc_name + "_id\n")
 		target.write(tab + "rpc_procedures_max_id\n")
 		target.write("} rpc_proc_id;\n\n\n")
 	else:
-		for i in range(len(xml_data_obj.rpc_arg_list) -1):
-			target.write(tab + xml_data_obj.rpc_arg_list[i].rpc_name + "_id,\n")
-		target.write(tab + xml_data_obj.rpc_arg_list[(len(xml_data_obj.rpc_arg_list) -1)].rpc_name + "_id,\n")
+		for i in range(len(xml_data_obj.rpc_list) -1):
+			target.write(tab + xml_data_obj.rpc_list[i].rpc_name + "_id,\n")
+		target.write(tab + xml_data_obj.rpc_list[(len(xml_data_obj.rpc_list) -1)].rpc_name + "_id,\n")
 		target.write(tab + "rpc_procedures_max_id\n")
 		target.write("} rpc_proc_id;\n\n\n")
 
@@ -654,69 +712,76 @@ def generate_rpc_spec_file(xml_data_obj, dir_path):
 
 	target.write("\n\n")
 	# iterate over all RPCs and print their Signatures
-	for rpc_obj in xml_data_obj.rpc_arg_list:
-		sign = ""
-		rpc_return_type = rpc_obj.rpc_return_type
-		if rpc_return_type.dataType != "OBJECT":
-			sign += __get_c_datatype(rpc_return_type.dataType)
-		else:
-			 sign += rpc_return_type.referredObject
-		if rpc_return_type.isPTR == "true":
-			sign += " *\n"
-		else:
-			sign += "\n"
+	for rpc_obj in xml_data_obj.rpc_list:
+		signature = get_rpc_signature(rpc_obj)
+		target.write(signature + ";\n\n")
 
-		sign += rpc_obj.rpc_name + "("
-		
-		if len(rpc_obj.rpc_arg_list) == 1:
-			arg_obj = rpc_obj.rpc_arg_list[0]
-			if arg_obj.dataType == "OBJECT":
-				sign += arg_obj.referredObject
-			else:
-				sign += __get_c_datatype(arg_obj.dataType)
-			
-			if arg_obj.isPTR == "true":
-				sign += " *"
-			else:
-				 sign += " "
-		
-			sign += arg_obj.arg_name
-			sign += ");\n\n"
-			
-
-		else:
-			for i in range(len(rpc_obj.rpc_arg_list) -1):
-				arg_obj = rpc_obj.rpc_arg_list[i]
-				if arg_obj.dataType == "OBJECT":
-					sign += arg_obj.referredObject
-				else:
-					sign += __get_c_datatype(arg_obj.dataType)
-				
-				if arg_obj.isPTR == "true":
-					sign += " *"
-				else:
-					 sign += " "
-		
-				sign += arg_obj.arg_name + ", "
-
-			arg_obj = rpc_obj.rpc_arg_list[len(rpc_obj.rpc_arg_list) -1]
-			if arg_obj.dataType == "OBJECT":
-				sign += arg_obj.referredObject
-			else:
-				sign += __get_c_datatype(arg_obj.dataType)
-			
-			if arg_obj.isPTR == "true":
-				sign += " *"
-			else:
-				 sign += " "
-		
-			sign += arg_obj.arg_name + ");\n\n"
-
-		target.write(sign)
-	target.write("#endif\n")
+	target.write("\n\n#endif\n")
 	target.close()
 		
 	
+def generate_client_stubs(xml_data_obj, dir_path):
+	target = open(dir_path + "/rpc_client_stubs.c", 'w')
+	target.write("#include \"rpc_spec.h\"\n")
+	target.write("#include \"rpc_common.h\"\n")
+	target.write("\n")
+	
+	for struct_obj in xml_data_obj.c_struct_obj_list:
+		target.write("#include \"" + struct_obj.struct_name + ".h\"\n")
+		target.write("#include \"" + struct_obj.struct_name + "_xdr_serialize.h\"\n")
+	
+	target.write("\n\n")
+	target.write("static unsigned int tid = 0;\n")
+	target.write("extern client_param_t client_param;\n")
+	target.write("extern int client_rpc_send_rcv (ser_buff_t *in_b, ser_buff_t *out_b);\n")
+	target.write("\n\n")
+	tab = "	"
+	for rpc_obj in xml_data_obj.rpc_list:
+		signature = get_rpc_signature(rpc_obj)
+		target.write(signature + "{\n")
+		target.write(tab + "ser_buff_t *in_b = 0, *out_b = 0;\n")
+		target.write(tab + "int rc = 0;\n")
+		target.write(tab + "init_serialized_buffer(&in_b);\n")
+		target.write(tab + "out_b = client_param.recv_ser_b;\n")
+		target.write(tab + "serialize_string(in_b, (char *)&tid, sizeof(unsigned int));\n")
+		target.write(tab + "tid++;\n")
+		target.write(tab + "serialize_uint32(in_b, " + rpc_obj.rpc_name + "_id);\n")
+		target.write(tab + "serialize_uint32(in_b, RPC_REQ);\n")
+		target.write(tab + "unsigned int payload_size_offset = get_serialize_buffer_current_ptr_offset(in_b);\n")
+		target.write(tab + "serialize_buffer_skip(in_b, sizeof(unsigned int));\n")
+		
+		for arg in rpc_obj.rpc_arg_list:
+			if arg.dataType != "OBJECT" and arg.isPTR == "false":
+				target.write(tab + "serialize_string(in_b, (char *)&" + arg.arg_name + ", " + __get_size_of(arg.dataType) + ");\n") 
+			elif arg.dataType != "OBJECT" and arg.isPTR == "true":
+				target.write(tab + "serialize_string(in_b, (char *)" + arg.arg_name + ", " + __get_size_of(arg.dataType) + ");\n") 
+			elif arg.dataType == "OBJECT" and arg.isPTR == "false":
+				target.write(tab + arg.referredObject + "_xdr_serialize(&" + arg.arg_name + ", in_b);\n")
+			elif arg.dataType == "OBJECT" and arg.isPTR == "true":
+				target.write(tab + arg.referredObject + "_xdr_serialize(" + arg.arg_name + ", in_b);\n")
+
+		target.write(tab + "unsigned int payload_size = get_serialize_buffer_size(in_b) - serialized_rpc_hdr_size();\n")
+		target.write(tab + "copy_in_serialized_buffer_by_offset(in_b, sizeof(unsigned int), (char *)&payload_size, payload_size_offset);\n")
+		target.write(tab + "rc = client_rpc_send_rcv(in_b, out_b);\n")
+		
+		rpc_return_type = rpc_obj.rpc_return_type
+		
+		if rpc_return_type.dataType != "OBJECT" and rpc_return_type.isPTR == "false":
+			target.write(tab + __get_c_datatype(rpc_return_type.dataType) + " res;\n")
+			target.write(tab + "de_serialize_string((char *)&res, out_b, " +  __get_size_of(rpc_return_type.dataType) + ");\n")
+		elif rpc_return_type.dataType != "OBJECT" and rpc_return_type.isPTR == "true":
+			target.write(tab + __get_c_datatype(rpc_return_type.dataType) + "  *res;\n")
+			target.write(tab + "de_serialize_string((char *)res, out_b, " + __get_size_of(rpc_return_type.dataType) + ");\n")
+		elif rpc_return_type.dataType == "OBJECT" and rpc_return_type.isPTR == "false":
+			target.write(tab + rpc_return_type.referredObject + " res = *" + rpc_return_type.referredObject + "_xdr_deserialize(out_b);\n")
+		elif rpc_return_type.dataType == "OBJECT" and rpc_return_type.isPTR == "true":
+			target.write(tab + rpc_return_type.referredObject + " * res = " + rpc_return_type.referredObject + "_xdr_deserialize(out_b);\n")
+
+		target.write(tab + "reset_serialize_buffer(out_b);\n")
+		target.write(tab + "return res;\n")
+		target.write("}\n\n")		
+	target.close()
+
 
 def generate_copy_fn(c_struct_obj, dir_path):
 	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
@@ -747,5 +812,5 @@ if __name__ == "__main__":
 	for c_struct_obj in xml_data_obj.c_struct_obj_list:
 		serialize_structure(c_struct_obj, ".")
 		deserialize_structure(c_struct_obj, ".")
-	print "No of RPCs = " + str(len(xml_data_obj.rpc_arg_list))
 	generate_rpc_spec_file(xml_data_obj, ".")
+	generate_client_stubs(xml_data_obj, ".")
