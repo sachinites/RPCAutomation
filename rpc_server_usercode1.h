@@ -11,4 +11,5 @@ typedef struct _max_sum_res{
 max_sum_res_t
 _MaxSumPath(tree_node_t *root);
 
+#define MAX(a,b)            (a >= b) ? a : b
 #endif

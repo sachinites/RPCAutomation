@@ -1,7 +1,6 @@
 #include "rpc_server_usercode1.h"
 #include "tree_node_t.h"
 #include "memory.h"
-#include "rpc_server_common_usr.h"
 
  max_sum_res_t
 _MaxSumPath(tree_node_t *root){
