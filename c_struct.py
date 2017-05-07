@@ -34,6 +34,11 @@ class rpc:
 				print "referredObject = None"
 			else:
 				print "referredObject = " + arg_obj.referredObject
+			
+			if arg_obj.vector == "true":
+				print "vector = true"
+			else:
+				print "vector = false"
 
 		print "Return type : "
 		arg_obj = self.rpc_return_type
@@ -46,13 +51,24 @@ class rpc:
 			return _str
 
 		if len(self.rpc_arg_list) == 1:
-			_str += self.rpc_arg_list[0].arg_name
+			if self.rpc_arg_list[0].isPTR == "true":
+				_str += self.rpc_arg_list[0].arg_name
+			elif self.rpc_arg_list[0].vector == "false":
+				_str += "*"
+				_str += self.rpc_arg_list[0].arg_name
+			elif self.rpc_arg_list[0].vector == "true":
+				_str += self.rpc_arg_list[0].arg_name
+
 			if self.rpc_arg_list[0].vector == "true":
 				_str += ", " + self.rpc_arg_list[0].arg_name + "_count "
 			return _str
 
 		for i in range(len(self.rpc_arg_list) -1):
-			_str += self.rpc_arg_list[i].arg_name + ", "
+			if self.rpc_arg_list[i].isPTR == "true":
+				_str += self.rpc_arg_list[i].arg_name + ", "
+			else:
+				_str = _str + "*" + self.rpc_arg_list[i].arg_name + ", "
+
 			if self.rpc_arg_list[i].vector == "true":
 				_str += self.rpc_arg_list[i].arg_name + "_count, "
 
@@ -542,7 +558,7 @@ def deserialize_structure(c_struct_obj, dir_path):
 	# writing header file
 	target_h.write("\n\n")
 	target_h.write(c_struct_obj.struct_name +" *\n" + c_struct_obj.struct_name + "_xdr_deserialize(ser_buff_t *b);\n")
-	target_h.write("\n\n#endif")
+	#target_h.write("\n\n#endif")
 	target_h.close()
 
 	# writing C file
@@ -642,6 +658,108 @@ def deserialize_structure(c_struct_obj, dir_path):
 	target_c.write("}")
 	target_c.close()
 	return
+
+
+def free_structures(c_struct_obj, dir_path):
+	target_h = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.h", 'a')
+
+	# writing header file
+	target_h.write("\n\n")
+	target_h.write("void\n" + c_struct_obj.struct_name + "_free (" + c_struct_obj.struct_name + " *obj);\n")
+	target_h.write("void\n" + c_struct_obj.struct_name + "_free_internals (" + c_struct_obj.struct_name + " *obj);\n")
+	target_h.write("\n\n#endif")
+	target_h.close()
+
+	# writing C file
+	target_c = open(dir_path + "/"+c_struct_obj.struct_name+"_xdr_serialize.c", 'a')
+	target_c.write("\n\n")
+	target_c.write("void\n" + c_struct_obj.struct_name + "_free_internals (" + c_struct_obj.struct_name + " *obj){\n")
+	tab = "	"
+	target_c.write("\n")
+	target_c.write(tab + "if(!obj) return;\n\n")
+
+	for fields in c_struct_obj.field_list:
+		fld_format = [None, None, None, None, None, None]
+		fld_format[0] = fields.datatype
+		fld_format[1] = fields.isptr 
+		fld_format[2] = fields.field_name
+		fld_format[3] = fields.vector
+		fld_format[4] = fields.referredObject
+		fld_format[5] = fields.cDataArraySize
+
+		
+		if fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
+			#int *p	     serialize_string(b, obj->p, sizeof(int))
+			target_c.write(tab)
+			target_c.write("if(obj->" + fld_format[2] + ")\n")
+			target_c.write(tab + tab + "free(obj->" + fld_format[2] + ");\n")
+		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
+			#int *p, count
+			target_c.write("\n" + tab)
+			target_c.write("for (loop_var = 0; loop_var < " + "obj->" + fld_format[2] + "_count ; loop_var ++){\n")
+			target_c.write(tab + tab)
+			target_c.write("if(&obj->" + fld_format[2] + "[loop_var])\n")
+			target_c.write(tab + tab + tab)
+			target_c.write("free(&obj->" + fld_format[2] + "[loop_var]);\n")
+			target_c.write(tab + "}\n\n")
+			target_c.write(tab + "if (obj->" + fld_format[2] + ")\n")
+			target_c.write(tab + tab + "free(obj->" + fld_format[2] + ");\n\n")
+		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] != None and fld_format[3] == "false":
+			# int *p[25]	
+			target_c.write(tab)
+			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++){\n")
+			target_c.write(tab + tab)
+			target_c.write("if(obj->" + fld_format[2] + "[loop_var])\n")
+			target_c.write(tab + tab + tab)
+			target_c.write("free(obj->" + fld_format[2] + "[loop_var]);\n")
+			target_c.write(tab + "}\n\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] != None and fld_format[3] == "false":
+			# person_t p[25] 
+			target_c.write(tab)
+			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var++){\n")
+			target_c.write(tab + tab) 
+			target_c.write(fld_format[4] + "_free_internals(&obj->" +  fld_format[2] + "[loop_var]);\n") 	
+			target_c.write(tab)
+			target_c.write("}\n\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
+			# person_t *p with vector
+			target_c.write(tab)
+			target_c.write("for (loop_var = 0; loop_var < " + "obj->" + fld_format[2] + "_count ; loop_var ++)\n")
+			target_c.write(tab + tab)
+			target_c.write(fld_format[4] + "_free_internals(&obj->" +  fld_format[2] + "[loop_var]);\n")
+			target_c.write(tab + "if(obj->" + fld_format[2] + ")\n")	
+			target_c.write(tab + tab + "free(obj->" +  fld_format[2] + ");\n\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "false" and fld_format[5] == None and fld_format[3] == "false":
+			# person_t p
+			target_c.write(tab)
+			target_c.write(fld_format[4] + "_free_internals(&obj->" +  fld_format[2] + ");\n\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
+			# person_t *p
+			target_c.write(tab + fld_format[4] + "_free(obj->" +  fld_format[2] + ");\n\n")
+		elif fld_format[0] == "OBJECT" and fld_format[1] == "true" and fld_format[5] != None and fld_format[3] == "false":
+			# person_t *p[25]
+			target_c.write(tab)
+			target_c.write("for (loop_var = 0; loop_var < " + fld_format[5] + "; loop_var ++){\n")
+			target_c.write(tab + tab)
+			target_c.write("if(obj->" + fld_format[2] + "[loop_var])\n")	
+			target_c.write(tab + tab + tab)
+			target_c.write(fld_format[4] + "_free(obj->" +  fld_format[2] + "[loop_var]);\n")
+			target_c.write(tab + "}\n")
+		else:
+			print fld_format[2] + " mis hit6 "
+
+
+	target_c.write("}\n\n")	
+
+	target_c.write("void\n")
+	target_c.write(c_struct_obj.struct_name + "_free (" + c_struct_obj.struct_name + " *obj){\n")
+	target_c.write(tab + "if(!obj)	return;\n")
+	target_c.write(tab + c_struct_obj.struct_name + "_free_internals (obj);\n")
+	target_c.write(tab + "free(obj);\n")
+	target_c.write("}")
+	target_c.close()
+
+
 
 def get_rpc_signature(rpc_obj):
 	sign = ""
@@ -786,18 +904,21 @@ def generate_server_stubs_c(xml_data_obj, dir_path):
 				target.write(tab + "unsigned int " + arg.arg_name + "_count = 0;\n")
 				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + "_count, b , sizeof(unsigned int));\n")
 				target.write(tab + __get_c_datatype(arg.dataType) + " * " + arg.arg_name + " = calloc(" + arg.arg_name + "_count, " + __get_size_of(arg.dataType)  + ");\n") 
-				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + ", b , " + __get_size_of(arg.dataType) + " * " + arg.arg_name + "_count);\n") 
+				target.write(tab + "de_serialize_string((char *)" + arg.arg_name + ", b , " + __get_size_of(arg.dataType) + " * " + arg.arg_name + "_count);\n") 
 
 			elif arg.dataType == "OBJECT" and arg.isPTR == "false" and arg.vector == "false":
-				target.write(tab + arg.referredObject + " " + arg.arg_name + " = *" + arg.referredObject + "_xdr_deserialize(b);\n")
+				target.write(tab + arg.referredObject + " *" + arg.arg_name + " = " + arg.referredObject + "_xdr_deserialize(b);\n")
 			elif arg.dataType == "OBJECT" and arg.isPTR == "true" and arg.vector == "false":
 				target.write(tab + arg.referredObject + " *" + arg.arg_name + " = " + arg.referredObject + "_xdr_deserialize(b);\n")
 			elif arg.dataType == "OBJECT" and arg.vector == "true":
 				target.write(tab + "unsigned int " + arg.arg_name + "_count = 0;\n")
 				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + "_count, b , sizeof(unsigned int));\n")
 				target.write(tab + arg.referredObject + " *" + arg.arg_name + " = calloc( " +  arg.arg_name + "_count, sizeof( " + arg.referredObject + "));\n")
-				target.write(tab + "for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++)\n")
-				target.write(tab + tab + arg.arg_name + "[loop_var] = *" + arg.referredObject + "_xdr_deserialize(b);\n") 
+				target.write(tab + "for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++){\n")
+				target.write(tab + tab + arg.referredObject + " *temp = " + arg.referredObject + "_xdr_deserialize(b);\n")
+				target.write(tab + tab + arg.arg_name + "[loop_var] = *temp;\n") 
+				target.write(tab + tab + "free(temp);\n")
+				target.write(tab + "}\n")
 			else:
 				print "hit miss 4"
 
@@ -816,8 +937,12 @@ def generate_server_stubs_c(xml_data_obj, dir_path):
 		for arg in rpc_obj.rpc_arg_list:
 			if(arg.dataType != "OBJECT" and arg.vector == "true"):
 				target.write(tab + "free(" + arg.arg_name + ");\n")
-
-		# ToDO : Free Object structures
+			elif arg.dataType == "OBJECT" and arg.vector == "false":
+				target.write(tab + arg.referredObject + "_free(" + arg.arg_name + ");\n")
+			elif arg.dataType == "OBJECT" and arg.vector == "true":
+				target.write(tab + "for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++)\n")
+				target.write(tab + tab + arg.referredObject + "_free_internals(&" + arg.arg_name + "[loop_var]);\n")
+				target.write(tab + "free( " + arg.arg_name + ");\n")
 
 		target.write(tab + "init_serialized_buffer(&out_b);\n")
 		
@@ -980,6 +1105,7 @@ if __name__ == "__main__":
 	for c_struct_obj in xml_data_obj.c_struct_obj_list:
 		serialize_structure(c_struct_obj, ".")
 		deserialize_structure(c_struct_obj, ".")
+		free_structures(c_struct_obj, ".")
 	generate_rpc_spec_file(xml_data_obj, ".")
 	generate_client_stubs(xml_data_obj, ".")
 	generate_server_stubs_c(xml_data_obj, ".")
