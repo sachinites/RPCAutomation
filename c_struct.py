@@ -46,12 +46,19 @@ class rpc:
 			return _str
 
 		if len(self.rpc_arg_list) == 1:
-			return self.rpc_arg_list[0].arg_name
+			_str += self.rpc_arg_list[0].arg_name
+			if self.rpc_arg_list[0].vector == "true":
+				_str += ", " + self.rpc_arg_list[0].arg_name + "_count "
+			return _str
 
 		for i in range(len(self.rpc_arg_list) -1):
 			_str += self.rpc_arg_list[i].arg_name + ", "
+			if self.rpc_arg_list[i].vector == "true":
+				_str += self.rpc_arg_list[i].arg_name + "_count, "
 
 		_str += self.rpc_arg_list[len(self.rpc_arg_list) -1].arg_name
+		if self.rpc_arg_list[len(self.rpc_arg_list) -1].vector == "true":
+			_str += self.rpc_arg_list[i].arg_name + "_count "
 		return _str
 
 class rpc_arg:
@@ -60,6 +67,7 @@ class rpc_arg:
 		dataType=None
 		isPTR="false"
 		referredObject=None
+		vector=None
 
 	def print_rpc_arg(self):
 		if self.arg_name != None:
@@ -300,6 +308,11 @@ def build_structure_list_from_xml(xml_file_name):
 				arg_obj.referredObject = arg_it.getAttribute("referredObject")
 			else:
 				arg_obj.referredObject = None
+
+			if arg_it.hasAttribute("vector"):
+				arg_obj.vector = arg_it.getAttribute("vector")
+			else:
+				arg_obj.vector = "false"
 		
 			arg_lst.append(arg_obj)
 		rpc_obj.rpc_arg_list = arg_lst
@@ -568,7 +581,7 @@ def deserialize_structure(c_struct_obj, dir_path):
 			# int p	     de_serialize_string((char *)&obj->p, b, sizeof(int))	
 			target_c.write("de_serialize_string((char *)&obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "false":
-			#int *p	     serialize_string((char *)obj->p, b , sizeof(int))
+			#int *p	     de_serialize_string((char *)obj->p, b , sizeof(int))
 			target_c.write("de_serialize_string_by_ref((char *)&obj->" + fld_format[2] + ", b, " + __get_size_of(fld_format[0]) + ");\n")
 		elif fld_format[0] != "OBJECT" and fld_format[1] == "true" and fld_format[5] == None and fld_format[3] == "true":
 			#p_count = 0; int *p
@@ -652,13 +665,15 @@ def get_rpc_signature(rpc_obj):
 		else:
 			sign += __get_c_datatype(arg_obj.dataType)
 		
-		if arg_obj.isPTR == "true":
+		if arg_obj.isPTR == "true" or arg_obj.vector == "true":
 			sign += " *"
 		else:
 			 sign += " "
 	
 		sign += arg_obj.arg_name
-		sign += ")"
+
+		if arg_obj.vector == "true":
+			sign += ", unsigned int " + arg_obj.arg_name + "_count"
 
 	else:
 		for i in range(len(rpc_obj.rpc_arg_list) -1):
@@ -668,12 +683,15 @@ def get_rpc_signature(rpc_obj):
 			else:
 				sign += __get_c_datatype(arg_obj.dataType)
 			
-			if arg_obj.isPTR == "true":
+			if arg_obj.isPTR == "true" or arg_obj.vector == "true":
 				sign += " *"
 			else:
 				 sign += " "
 	
 			sign += arg_obj.arg_name + ", "
+	
+			if arg_obj.vector == "true":
+				sign += " unsigned int " + arg_obj.arg_name + "_count, "
 			
 		arg_obj = rpc_obj.rpc_arg_list[len(rpc_obj.rpc_arg_list) -1]
 
@@ -682,12 +700,17 @@ def get_rpc_signature(rpc_obj):
 		else:
 			sign += __get_c_datatype(arg_obj.dataType)
 		
-		if arg_obj.isPTR == "true":
+		if arg_obj.isPTR == "true" or arg_obj.vector == "true":
 			sign += " *"
 		else:
 			 sign += " "
 
-		sign += arg_obj.arg_name + ")"
+		sign += arg_obj.arg_name
+
+		if arg_obj.vector == "true":
+			sign += ", unsigned int " + arg_obj.arg_name + "_count"
+
+	sign += ")"
 	return sign
 
 
@@ -738,6 +761,7 @@ def generate_server_stubs_c(xml_data_obj, dir_path):
 	target = open(dir_path + "/rpc_server_stubs.c", 'w')
 	target.write("#include \"rpc_spec.h\"\n")
 	target.write("#include \"serialize.h\"\n")
+	target.write("#include  <stdlib.h>\n")
 	target.write("\n")
 	for struct_obj in xml_data_obj.c_struct_obj_list:
 		target.write("#include \"" + struct_obj.struct_name + ".h\"\n")
@@ -749,17 +773,33 @@ def generate_server_stubs_c(xml_data_obj, dir_path):
 		target.write("ser_buff_t *\n")
 		target.write("stub_" + rpc_obj.rpc_name + "(ser_buff_t *b){\n")
 		target.write(tab + "ser_buff_t *out_b = 0;\n")
+		target.write(tab + "unsigned int loop_var = 0;\n")
+	
 		for arg in rpc_obj.rpc_arg_list:
-			if arg.dataType != "OBJECT" and arg.isPTR == "false":
+			if arg.dataType != "OBJECT" and arg.isPTR == "false" and arg.vector == "false":
 				target.write(tab + __get_c_datatype(arg.dataType) + " " + arg.arg_name + ";\n")
 				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + ", b , " + __get_size_of(arg.dataType) + ");\n") 
-			elif arg.dataType != "OBJECT" and arg.isPTR == "true":
+			elif arg.dataType != "OBJECT" and arg.isPTR == "true" and arg.vector == "false":
 				target.write(tab + __get_c_datatype(arg.dataType) + " *" + arg.arg_name + ";\n")
 				target.write(tab + "de_serialize_string((char *)" + arg.arg_name + ", b , " + __get_size_of(arg.dataType) + ");\n") 
-			elif arg.dataType == "OBJECT" and arg.isPTR == "false":
+			elif arg.dataType != "OBJECT" and arg.vector == "true":
+				target.write(tab + "unsigned int " + arg.arg_name + "_count = 0;\n")
+				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + "_count, b , sizeof(unsigned int));\n")
+				target.write(tab + __get_c_datatype(arg.dataType) + " * " + arg.arg_name + " = calloc(" + arg.arg_name + "_count, " + __get_size_of(arg.dataType)  + ");\n") 
+				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + ", b , " + __get_size_of(arg.dataType) + " * " + arg.arg_name + "_count);\n") 
+
+			elif arg.dataType == "OBJECT" and arg.isPTR == "false" and arg.vector == "false":
 				target.write(tab + arg.referredObject + " " + arg.arg_name + " = *" + arg.referredObject + "_xdr_deserialize(b);\n")
-			elif arg.dataType == "OBJECT" and arg.isPTR == "true":
+			elif arg.dataType == "OBJECT" and arg.isPTR == "true" and arg.vector == "false":
 				target.write(tab + arg.referredObject + " *" + arg.arg_name + " = " + arg.referredObject + "_xdr_deserialize(b);\n")
+			elif arg.dataType == "OBJECT" and arg.vector == "true":
+				target.write(tab + "unsigned int " + arg.arg_name + "_count = 0;\n")
+				target.write(tab + "de_serialize_string((char *)&" + arg.arg_name + "_count, b , sizeof(unsigned int));\n")
+				target.write(tab + arg.referredObject + " *" + arg.arg_name + " = calloc( " +  arg.arg_name + "_count, sizeof( " + arg.referredObject + "));\n")
+				target.write(tab + "for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++)\n")
+				target.write(tab + tab + arg.arg_name + "[loop_var] = *" + arg.referredObject + "_xdr_deserialize(b);\n") 
+			else:
+				print "hit miss 4"
 
 		rpc_return_type = rpc_obj.rpc_return_type
 		arg_sequence = rpc_obj.contatenate_arg_name()
@@ -771,6 +811,13 @@ def generate_server_stubs_c(xml_data_obj, dir_path):
 			target.write(tab + rpc_return_type.referredObject + " res = *" +  rpc_obj.rpc_name + "(" + arg_sequence + ");\n")
 		elif rpc_return_type.dataType == "OBJECT" and rpc_return_type.isPTR == "true":
 			target.write(tab + rpc_return_type.referredObject + " * res = " + rpc_obj.rpc_name + "(" + arg_sequence + ");\n")
+
+		# free all calloc for primitive Arrays buffers
+		for arg in rpc_obj.rpc_arg_list:
+			if(arg.dataType != "OBJECT" and arg.vector == "true"):
+				target.write(tab + "free(" + arg.arg_name + ");\n")
+
+		# ToDO : Free Object structures
 
 		target.write(tab + "init_serialized_buffer(&out_b);\n")
 		
@@ -807,7 +854,7 @@ def generate_client_stubs(xml_data_obj, dir_path):
 		signature = get_rpc_signature(rpc_obj)
 		target.write(signature + "{\n")
 		target.write(tab + "ser_buff_t *in_b = 0, *out_b = 0;\n")
-		target.write(tab + "int rc = 0;\n")
+		target.write(tab + "int rc = 0; unsigned int loop_var = 0;\n")
 		target.write(tab + "init_serialized_buffer(&in_b);\n")
 		target.write(tab + "out_b = client_param.recv_ser_b;\n")
 		target.write(tab + "serialize_string(in_b, (char *)&tid, sizeof(unsigned int));\n")
@@ -818,14 +865,40 @@ def generate_client_stubs(xml_data_obj, dir_path):
 		target.write(tab + "serialize_buffer_skip(in_b, sizeof(unsigned int));\n")
 		
 		for arg in rpc_obj.rpc_arg_list:
-			if arg.dataType != "OBJECT" and arg.isPTR == "false":
+			if arg.dataType != "OBJECT" and arg.isPTR == "false" and arg.vector == "false":
 				target.write(tab + "serialize_string(in_b, (char *)&" + arg.arg_name + ", " + __get_size_of(arg.dataType) + ");\n") 
-			elif arg.dataType != "OBJECT" and arg.isPTR == "true":
+			elif arg.dataType != "OBJECT" and arg.vector == "true":
+				target.write(tab)
+				target.write(tab + "serialize_string(in_b, (char *)&" +  arg.arg_name + "_count, sizeof(unsigned int));\n")
+				target.write("for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++)\n")
+				target.write(tab + tab)
+				target.write("serialize_string(in_b, (char *)(" + arg.arg_name + " + loop_var), " + __get_size_of(arg.dataType) + ");\n")
+			elif arg.dataType != "OBJECT" and arg.isPTR == "true" and arg.vector == "false":
 				target.write(tab + "serialize_string(in_b, (char *)" + arg.arg_name + ", " + __get_size_of(arg.dataType) + ");\n") 
-			elif arg.dataType == "OBJECT" and arg.isPTR == "false":
+			elif arg.dataType != "OBJECT" and arg.vector == "true":
+				target.write(tab)
+				target.write(tab + "serialize_string(in_b, (char *)&" +  arg.arg_name + "_count, sizeof(unsigned int));\n")
+				target.write("for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++)\n")
+				target.write(tab + tab)
+				target.write("serialize_string(in_b, (char *)(" + arg.arg_name + " + loop_var), " + __get_size_of(arg.dataType) + ");\n")
+
+			elif arg.dataType == "OBJECT" and arg.isPTR == "false" and arg.vector == "false":
 				target.write(tab + arg.referredObject + "_xdr_serialize(&" + arg.arg_name + ", in_b);\n")
-			elif arg.dataType == "OBJECT" and arg.isPTR == "true":
+			elif arg.dataType == "OBJECT" and arg.vector == "true":
+				target.write(tab + "serialize_string(in_b, (char *)&" +  arg.arg_name + "_count, sizeof(unsigned int));\n")
+				target.write(tab + "for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++)\n")
+				target.write(tab + tab)
+				target.write(arg.referredObject + "_xdr_serialize(" + arg.arg_name + " + loop_var, in_b);\n")
+			elif arg.dataType == "OBJECT" and arg.isPTR == "true" and arg.vector == "false":
 				target.write(tab + arg.referredObject + "_xdr_serialize(" + arg.arg_name + ", in_b);\n")
+			elif arg.dataType == "OBJECT" and arg.vector == "true":
+				target.write(tab)
+				target.write(tab + "serialize_string(in_b, (char *)&" +  arg.arg_name + "_count, sizeof(unsigned int));\n")
+				target.write("for (loop_var = 0; loop_var < " + arg.arg_name + "_count; loop_var++)\n")
+				target.write(tab + tab)
+				target.write(arg.referredObject + "_xdr_serialize(" + arg.arg_name + " + loop_var, in_b);\n")
+			else:
+				print "hit miss5"
 
 		target.write(tab + "unsigned int payload_size = get_serialize_buffer_size(in_b) - serialized_rpc_hdr_size();\n")
 		target.write(tab + "copy_in_serialized_buffer_by_offset(in_b, sizeof(unsigned int), (char *)&payload_size, payload_size_offset);\n")

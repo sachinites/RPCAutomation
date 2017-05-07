@@ -87,4 +87,10 @@
 	<member name="arg1" dataType="OBJECT" referredObject="ll_node_t" isPTR="true" paratype="param"/>
 	<member dataType="INT32"  paratype="RETURN_TYPE"/>
 </RPC_spec>
+
+<RPC_spec rpc_name="rpc_send_employee_list">
+	<member name="empl_list" dataType="OBJECT" referredObject="person_t" vector="true" paratype="param"/>
+	<member dataType="INT32"  paratype="RETURN_TYPE"/>
+</RPC_spec>
+	
 </RPC_Structures>

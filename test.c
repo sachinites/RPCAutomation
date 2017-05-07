@@ -14,9 +14,29 @@
 
 int
 main(int argc, char **argv){
-	person_t person;
-	memset(&person, 0, sizeof(person_t));
+	person_t person[4];
+	memset(person, 0, sizeof(person));
+	person[0].age = 20;
+	strcpy(person[0].name , "Abhishek");
+	person[1].age = 21;
+	strcpy(person[1].name , "Sagar");
+	person[2].age = 22;
+	strcpy(person[2].name , "Mohan");
+	person[3].age = 22;
+	strcpy(person[3].name , "Kumar");
 
+	strcpy(person[0].dream_companies[0].comp_name, "BRCD");
+	strcpy(person[0].dream_companies[1].comp_name, "Juniper");
+	strcpy(person[0].dream_companies[2].comp_name, "Cisco");
+
+	
+
+	set_rpc_client_param(5000);
+	int rc = rpc_send_employee_list(person, 4);
+
+	printf("rc = %d\n", rc);
+
+#if 0
 	person.vehicle_nos[0] = 100;
 	person.vehicle_nos[1] = 101;
 	person.vehicle_nos[2] = 102;
@@ -62,5 +82,6 @@ main(int argc, char **argv){
 	printf("sum of ll = %d\n", rpc_ll_sum(head));
 
 //	gdb(b);
+#endif
 	return 0;
 }

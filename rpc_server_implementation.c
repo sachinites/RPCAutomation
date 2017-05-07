@@ -31,3 +31,17 @@ rpc_ll_sum(ll_node_t *head){
 		sum+=head->data;
 	return sum;
 }
+
+int
+rpc_send_employee_list(person_t *emp_list, unsigned int emp_list_count){
+
+	unsigned int i = 0, j = 0;
+	for (i = 0; i < emp_list_count; i++){
+		printf("%d. age = %d, Name = %s\n", i, emp_list[i].age, emp_list[i].name);
+		if(i == 0){	
+			for(j = 0; j < 3; j++)
+				printf("dream company name = %s\n", emp_list[i].dream_companies[j].comp_name);
+		}
+	}
+	return i;
+}
