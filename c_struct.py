@@ -46,7 +46,6 @@ class rpc:
 		print "----------\n"	
 
 	def contatenate_arg_name(self):
-                self.print_rpc()
 		_str=""
 		if len(self.rpc_arg_list) == 0:
 			return _str
@@ -329,7 +328,7 @@ def build_structure_list_from_xml(xml_file_name):
 			if arg_it.hasAttribute("isPTR"):
 				arg_obj.isPTR = arg_it.getAttribute("isPTR")
 			else:
-				arg_obj.isPTR = None
+				arg_obj.isPTR = "false"
 
 			if arg_it.hasAttribute("referredObject"):
 				arg_obj.referredObject = arg_it.getAttribute("referredObject")
