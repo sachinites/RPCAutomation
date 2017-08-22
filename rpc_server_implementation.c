@@ -45,3 +45,9 @@ rpc_send_employee_list(person_t *emp_list, unsigned int emp_list_count){
 	}
 	return i;
 }
+
+int
+rpc_add_numbers(int n1, int n2){
+
+    return n1+n2;
+}

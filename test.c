@@ -35,6 +35,8 @@ main(int argc, char **argv){
 	int rc = rpc_send_employee_list(person, 4);
 
 	printf("rc = %d\n", rc);
+    int n1 = 2, n2 = 4;
+    printf("Result of adding two number %d and %d= %d\n", n1,n2, rpc_add_numbers(n1,n2));
 
 #if 0
 	person.vehicle_nos[0] = 100;

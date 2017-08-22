@@ -46,6 +46,7 @@ class rpc:
 		print "----------\n"	
 
 	def contatenate_arg_name(self):
+                self.print_rpc()
 		_str=""
 		if len(self.rpc_arg_list) == 0:
 			return _str
@@ -66,15 +67,25 @@ class rpc:
 		for i in range(len(self.rpc_arg_list) -1):
 			if self.rpc_arg_list[i].isPTR == "true":
 				_str += self.rpc_arg_list[i].arg_name + ", "
-			else:
-				_str = _str + "*" + self.rpc_arg_list[i].arg_name + ", "
+                        elif self.rpc_arg_list[i].isPTR == "false" and self.rpc_arg_list[i].dataType == "OBJECT":
+                                _str = _str + "*" + self.rpc_arg_list[i].arg_name + ", "
+			elif self.rpc_arg_list[i].isPTR == "false" and self.rpc_arg_list[i].dataType != "OBJECT":
+				_str = _str + self.rpc_arg_list[i].arg_name + ", "
 
 			if self.rpc_arg_list[i].vector == "true":
 				_str += self.rpc_arg_list[i].arg_name + "_count, "
 
-		_str += self.rpc_arg_list[len(self.rpc_arg_list) -1].arg_name
+                
+		if self.rpc_arg_list[len(self.rpc_arg_list) -1].isPTR == "true":
+		    _str += self.rpc_arg_list[len(self.rpc_arg_list) -1].arg_name
+                elif self.rpc_arg_list[len(self.rpc_arg_list) -1].isPTR == "false" and self.rpc_arg_list[len(self.rpc_arg_list) -1].dataType == "OBJECT":
+                    _str = _str + "*" + self.rpc_arg_list[len(self.rpc_arg_list) -1].arg_name
+		elif self.rpc_arg_list[len(self.rpc_arg_list) -1].isPTR == "false" and self.rpc_arg_list[len(self.rpc_arg_list) -1].dataType != "OBJECT":
+		    _str = _str + self.rpc_arg_list[len(self.rpc_arg_list) -1].arg_name
+
 		if self.rpc_arg_list[len(self.rpc_arg_list) -1].vector == "true":
-			_str += self.rpc_arg_list[i].arg_name + "_count "
+		    _str += self.rpc_arg_list[len(self.rpc_arg_list) -1].arg_name + "_count, "
+
 		return _str
 
 class rpc_arg:
